@@ -1,0 +1,547 @@
+---
+title: "Documentation for the SRN Data Dashboard"
+author:
+    - name: Sustainability Reporting Navigator
+      url: https://srnav.com
+date: today
+date-modified: today
+description: "Technical documentation of the ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance dataset."
+lang: en
+format:
+  pdf:
+    include-in-header:
+      text: |
+        \renewcommand{\familydefault}{\sfdefault}
+        \usepackage{tikz}
+        \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+
+        \definecolor{clrPurple50}{HTML}{EEEDFE}
+        \definecolor{clrPurple600}{HTML}{534AB7}
+        \definecolor{clrPurple800}{HTML}{3C3489}
+        \definecolor{clrTeal50}{HTML}{E1F5EE}
+        \definecolor{clrTeal600}{HTML}{0F6E56}
+        \definecolor{clrTeal800}{HTML}{085041}
+        \definecolor{clrCoral50}{HTML}{FAECE7}
+        \definecolor{clrCoral600}{HTML}{993C1D}
+        \definecolor{clrCoral800}{HTML}{712B13}
+        \definecolor{clrAmber50}{HTML}{FAEEDA}
+        \definecolor{clrAmber600}{HTML}{854F0B}
+        \definecolor{clrAmber800}{HTML}{633806}
+        \definecolor{clrGray50}{HTML}{F1EFE8}
+        \definecolor{clrGray200}{HTML}{B4B2A9}
+        \definecolor{clrGray600}{HTML}{5F5E5A}
+        \definecolor{clrGray800}{HTML}{444441}
+        \definecolor{clrAmber200}{HTML}{EF9F27}
+
+        \tikzset{
+          base/.style={
+            rectangle, rounded corners=5pt,
+            text width=#1, minimum height=1.1cm,
+            align=center, inner sep=6pt,
+            font=\small\sffamily,
+            draw, line width=0.4pt
+          },
+          base/.default=6cm,
+          nodeGray/.style={base=#1,
+            fill=clrGray50, draw=clrGray600, text=clrGray800},
+          nodeGray/.default=6cm,
+          nodePurple/.style={base=#1,
+            fill=clrPurple50, draw=clrPurple600, text=clrPurple800},
+          nodePurple/.default=6cm,
+          nodeTeal/.style={base=#1,
+            fill=clrTeal50, draw=clrTeal600, text=clrTeal800},
+          nodeTeal/.default=6cm,
+          nodeCoral/.style={base=#1,
+            fill=clrCoral50, draw=clrCoral600, text=clrCoral800},
+          nodeCoral/.default=6cm,
+          nodeAmber/.style={base=#1,
+            fill=clrAmber50, draw=clrAmber600, text=clrAmber800},
+          nodeAmber/.default=6cm,
+          arr/.style={-{Stealth[length=5pt,width=4pt]},
+            line width=0.7pt, color=clrGray600},
+          arrDash/.style={arr, dashed},
+          leaderLine/.style={densely dashed, line width=0.4pt, color=clrGray200},
+          paramBox/.style={rectangle, rounded corners=3pt,
+            fill=clrAmber50, draw=clrAmber200,
+            font=\scriptsize\sffamily, text=clrAmber800,
+            inner sep=4pt, align=left},
+          dottedBox/.style={rectangle, rounded corners=6pt,
+            dashed, line width=0.6pt,
+            draw=clrGray200, fill=none, inner sep=10pt},
+          legendSwatch/.style={rectangle, rounded corners=2pt,
+            minimum width=0.55cm, minimum height=0.35cm,
+            draw, line width=0.4pt, inner sep=0pt},
+        }
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    colorlinks: true
+    geometry:
+      - margin=2.5cm
+    fontsize: 11pt
+    linestretch: 1.15
+bibliography: references.bib
+citeproc: true
+link-citations: true
+abstract: |
+  This whitepaper documents the automated ESG indicator extraction pipeline
+  of the Sustainability Reporting Navigator (SRN). The pipeline retrieves
+  and extracts a predefined set of 25 ESG indicators from firms' annual and
+  sustainability reports using a hybrid retrieval strategy combining semantic
+  similarity search and keyword matching, followed by structured LLM extraction.
+  We describe the design choices, retrieval parameters, and data schema. For technical questions and licensing inquiries, please reach out via email at [hello@srnav.com](mailto:hello@srnav.com).
+---
+
+
+
+
+# Transparency
+
+The *transparency* dimensions captured by the SRN dataset describe **how** firms report rather than **what** they report. They are derived from the same annual and sustainability reports used for the quantitative ESG indicators (see [Performance]), but rather than extracting individual numbers, we measure textual properties of each document — its length, readability, topic coverage, and the specificity with which it discusses environmental and social issues. Reports are first parsed with Docling [@docling2024] and then processed with Python at the sentence level. The downstream language model used to classify environmental and social passages was originally developed for @Donau2024-yc; we adopt their label set and decision thresholds without modification, and refer the reader to that paper for full methodological detail.
+
+In what follows we summarise the two transparency dimensions exposed through the dashboard: a set of report-level textual characteristics (Section [Textual characteristics]) and a sentence-level classifier that locates passages addressing environmental and social topics (Section [Environmental and social topics]).
+
+## Textual characteristics
+
+For each (firm, year, report) we compute a small number of report-level features describing the document's overall structure and writing style. They are stored alongside the extracted ESG indicators and surface in the dashboard as a single row per report. The features fall into three groups:
+
+- **Length and structure.** Total token count, sentence count, average sentence length, and the number of pages devoted to environmental and social topics (derived from the sentence-level classifier introduced in the next subsection).
+- **Readability.** [TODO: confirm which scores are computed — Flesch Reading Ease, Flesch--Kincaid Grade Level, Gunning Fog, or a combination. Note the tokenizer / sentence splitter used so the numbers are reproducible.]
+- **Boilerplate and specificity.** [TODO: describe how boilerplate is identified (e.g., cross-firm n-gram overlap, repeated stock phrases) and how a specificity score is assigned to each report, citing the underlying method.]
+
+[TODO: short table listing the exact column names exposed in the dashboard / API, with units and a one-line description per column. This mirrors Table~\ref{tab:indicators} for the quantitative side.]
+
+## Environmental and social topics
+
+At the sentence level, we tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model trained in @Donau2024-yc; we run it sentence-by-sentence over the Docling output of both the annual and sustainability report. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model's confidence score, and the original page number, which allows users to drill from any aggregate transparency statistic back to the source passage.
+
+[TODO: enumerate the topic labels surfaced in the dashboard (e.g., climate change, pollution, water and marine resources, biodiversity, circular economy, own workforce, workers in the value chain, affected communities, consumers and end-users — and any social/governance labels you actively expose).]
+
+[TODO: one paragraph on aggregation — how sentence-level predictions roll up to the report-level "share of text on topic X" and "number of pages on topic X" features used in the dashboard, including the decision threshold applied to the model's score.]
+
+[TODO: one paragraph on validation — how the classifier was evaluated against a human-labelled sample, with the headline precision / recall numbers reported in @Donau2024-yc and any subsequent re-validation on the SRN corpus.]
+
+# Performance
+
+This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data points]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]), and finally describe how the resulting dataset is exposed to downstream researchers (Section [API accessibility]).
+
+
+## Data points
+Our list of datapoints covers all environmental, social, and governance (ESG) dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive). All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release \texttt{v1.2}, both served by the SRN community page without authentication.
+
+```{python}
+#| label: data-acquisition
+#| echo: true
+#| eval: true
+
+"""Fetch every public input that backs this document.
+
+All sources live on the SRN community release page and require no API
+token. Already-downloaded files are reused so re-rendering stays fast.
+"""
+
+import json, re, urllib.request
+from pathlib import Path
+
+RELEASE      = "v1.2"
+BASE         = f"https://lab.srnav.com/p/main-esrs-kpi/{RELEASE}"
+RELEASE_JSON = Path("release_v1_2.json")          # companies, fields, values
+SNAPSHOT     = Path("performance_snapshot.json")  # per-indicator accuracy
+
+def _http_get(url: str) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": "srn-whitepaper/1.0"})
+    return urllib.request.urlopen(req, timeout=30).read()
+
+def _balanced(text: str, start: int) -> str:
+    """Return text[start..matching '}']. start must point at an opening '{'."""
+    depth, in_str, q, esc = 0, False, None, False
+    for i in range(start, len(text)):
+        c = text[i]
+        if in_str:
+            if   esc:        esc = False
+            elif c == "\\":  esc = True
+            elif c == q:     in_str = False
+        else:
+            if   c in ('"', "'"): in_str, q = True, c
+            elif c == "{":         depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start: i + 1]
+    raise RuntimeError("unbalanced braces")
+
+# 1) Release data (used as the source of truth for indicator metadata).
+if not RELEASE_JSON.exists():
+    RELEASE_JSON.write_bytes(_http_get(f"{BASE}/data.json"))
+
+# 2) Performance snapshot. Embedded as a devalue-serialised JS object literal
+#    in the release page; we walk balanced braces and quote bare keys.
+if not SNAPSHOT.exists():
+    html   = _http_get(BASE).decode("utf-8")
+    anchor = html.find("performance:{")
+    if anchor == -1:
+        raise RuntimeError("performance snapshot not found on release page")
+    js   = _balanced(html, html.find("{", anchor))
+    text = re.sub(r"([{,])([A-Za-z_]\w*):", r'\1"\2":', js)
+    SNAPSHOT.write_text(json.dumps(json.loads(text), indent=2))
+
+for p in (RELEASE_JSON, SNAPSHOT):
+    print(f"{'cached ' if True else 'fetched'}{p}  ({p.stat().st_size:,} bytes)")
+```
+
+```{python}
+#| echo: false
+#| output: asis
+import json, pandas as pd
+from pathlib import Path
+
+# Indicator schema: prefer the richer local CSV (carries the ESRS reference
+# code), fall back to the public release JSON.
+csv_path = Path("schema_fields_rows.csv")
+if csv_path.exists():
+    df = (
+        pd.read_csv(csv_path)
+          .query("is_active == True")
+          .sort_values(["category", "display_order"])
+          .reset_index(drop=True)
+    )
+    show_ref = True
+else:
+    fields = json.loads(Path("release_v1_2.json").read_text())["fields"]
+    df = (
+        pd.DataFrame(fields)
+          .sort_values(["category", "display_order"])
+          .reset_index(drop=True)
+    )
+    df["reference"] = ""  # not exposed in the public release feed
+    show_ref = False
+
+category_meta = {
+    "environmental": "Environmental",
+    "social":        "Social",
+    "governance":    "Governance",
+}
+
+def esc(s):
+    if s is None or (isinstance(s, float) and pd.isna(s)):
+        return ""
+    repl = {"&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#",
+            "_": r"\_", "{": r"\{", "}": r"\}",
+            "~": r"\textasciitilde{}", "^": r"\textasciicircum{}"}
+    return "".join(repl.get(c, c) for c in str(s))
+
+tabular_spec = "@{}l l l@{}" if show_ref else "@{}l l@{}"
+ncols        = 3 if show_ref else 2
+header       = (r"\textbf{Ref.} & \textbf{Indicator} & \textbf{Unit} \\"
+                if show_ref else
+                r"\textbf{Indicator} & \textbf{Unit} \\")
+
+out = [
+    r"\begin{table}[h]",
+    r"\centering\footnotesize",
+    r"\setlength{\tabcolsep}{6pt}",
+    r"\renewcommand{\arraystretch}{1.05}",
+    rf"\begin{{tabular}}{{{tabular_spec}}}",
+    r"\toprule",
+    header,
+    r"\midrule",
+]
+
+for i, cat in enumerate(["environmental", "social", "governance"]):
+    if i > 0:
+        out.append(r"\addlinespace[2pt]\midrule")
+    out.append(rf"\multicolumn{{{ncols}}}{{@{{}}l}}{{\textit{{{category_meta[cat]}}}}} \\")
+    out.append(r"\addlinespace[2pt]")
+    for _, row in df[df["category"] == cat].iterrows():
+        name = esc(row["name"]).capitalize()
+        unit = esc(row["unit"]) if pd.notna(row["unit"]) and str(row["unit"]).strip() else "—"
+        if show_ref:
+            ref = esc(row["reference"])
+            out.append(rf"{ref} & {name} & {unit} \\")
+        else:
+            out.append(rf"{name} & {unit} \\")
+
+out += [
+    r"\bottomrule",
+    r"\end{tabular}",
+    r"\caption{ESG indicators extracted by the pipeline.}",
+    r"\label{tab:indicators}",
+    r"\end{table}",
+]
+
+print("\n".join(out))
+```
+
+
+## Pipeline setup
+Our extraction pipeline builds on the design described by @forster2026. For each firm-year, we extract a predefined set of 25 ESG indicators from the firm's annual report and sustainability report. Figure \ref{fig:pipeline} summarises the pipeline end-to-end.
+
+Text, tables, and figures of the source documents are first parsed and then chunked — that is, split into smaller units — using Docling [@docling2024]. To make chunks quickly retrievable, we embed each chunk with Mistral's text embedding model, `mistral-embed-2312` [@mistralembed2023]. The resulting numerical vectors are stored in a cosine-similarity index that serves as the backbone for retrieval.
+
+```{=latex}
+\begin{figure}[t]
+  \centering
+  \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[
+      node distance=0.45cm and 0.45cm, >=Stealth,
+      stage/.style 2 args={
+        rectangle, rounded corners=4pt,
+        text width=2.5cm, minimum height=1.35cm,
+        align=center, inner sep=4pt,
+        font=\small\sffamily,
+        draw, line width=0.4pt,
+        fill=#1, draw=#2, text=#2
+      },
+      laneLabel/.style={
+        font=\footnotesize\sffamily\bfseries,
+        text=clrGray800, anchor=east, align=right
+      },
+    ]
+
+      % ── Lane A: Indexing (one-time, per company) ──────────────────────────────
+      \node[stage={clrGray50}{clrGray800}]                    (pdfs)  {\textbf{Input}\\[1pt]{\scriptsize Annual\,+\,sustainability\\report (PDF)}};
+      \node[stage={clrTeal50}{clrTeal800}, right=of pdfs]     (parse) {\textbf{Parsing}\\[1pt]{\scriptsize Docling\\text, tables, sections}};
+      \node[stage={clrTeal50}{clrTeal800}, right=of parse]    (chunk) {\textbf{Chunking}\\[1pt]{\scriptsize 1{,}000 char,\\200 overlap}};
+      \node[stage={clrPurple50}{clrPurple800}, right=of chunk](embed) {\textbf{Embedding}\\[1pt]{\scriptsize Mistral Embed,\\per chunk}};
+      \node[stage={clrPurple50}{clrPurple800}, right=of embed](index) {\textbf{Vector index}\\[1pt]{\scriptsize pgvector,\\cosine sim.}};
+
+      \node[laneLabel] at ($(pdfs.west)+(-0.25,0)$) {Indexing\\{\scriptsize\itshape per firm-year}};
+
+      \draw[arr] (pdfs)  -- (parse);
+      \draw[arr] (parse) -- (chunk);
+      \draw[arr] (chunk) -- (embed);
+      \draw[arr] (embed) -- (index);
+
+      % ── Lane B: Extraction (per indicator) ────────────────────────────────────
+      \node[stage={clrGray50}{clrGray800},   below=2.2cm of pdfs]  (field)  {\textbf{Indicator}\\[1pt]{\scriptsize name\,+\,definition\\(schema field)}};
+      \node[stage={clrAmber50}{clrAmber800}, right=of field]       (qgen)   {\textbf{Query}\\[1pt]{\scriptsize Mistral Large\\generates query}};
+      \node[stage={clrPurple50}{clrPurple800}, right=of qgen]      (qemb)   {\textbf{Query embed}\\[1pt]{\scriptsize Mistral Embed}};
+      \node[stage={clrTeal50}{clrTeal800},   right=of qemb]        (hybrid) {\textbf{Hybrid retrieval}\\[1pt]{\scriptsize vector\,+\,BM25\\RRF, top $k{=}5$}};
+      \node[stage={clrAmber50}{clrAmber800}, right=of hybrid]      (llm)    {\textbf{Extraction}\\[1pt]{\scriptsize Mistral Large,\\Zod schema}};
+      \node[stage={clrTeal50}{clrTeal800},   right=of llm]         (db)     {\textbf{Record}\\[1pt]{\scriptsize value, source page,\\confidence}};
+
+      \node[laneLabel] at ($(field.west)+(-0.25,0)$) {Extraction\\{\scriptsize\itshape per indicator}};
+
+      \draw[arr] (field)  -- (qgen);
+      \draw[arr] (qgen)   -- (qemb);
+      \draw[arr] (qemb)   -- (hybrid);
+      \draw[arr] (hybrid) -- (llm);
+      \draw[arr] (llm)    -- (db);
+
+      % index supplies the retrieval step
+      \draw[arr] (index.south) -- ++(0,-0.55) -| (hybrid.north);
+
+      % reformulation loop: extraction → query generation (routed above the lane)
+      \draw[arrDash, color=clrPurple600]
+        (llm.north) -- ++(0,0.55) -| (qgen.north);
+      \node[font=\scriptsize\sffamily, text=clrPurple600] at
+        ($(qgen.north)!0.5!(llm.north)+(0,0.75)$)
+        {reformulate query ($\leq 3$ retries)};
+
+      % dashed container around the extraction lane (per-indicator loop)
+      \begin{scope}[on background layer]
+        \node[dottedBox,
+              fit=(field)(qgen)(qemb)(hybrid)(llm)(db),
+              inner sep=8pt,
+              label={[font=\scriptsize\sffamily\itshape, text=clrGray600,
+                      inner sep=2pt]below right:repeat $\times$ 25 indicators (batches of 5)}
+              ] (loopBox) {};
+      \end{scope}
+
+    \end{tikzpicture}%
+  }
+  \caption{ESG extraction pipeline. \textbf{Top lane (indexing, one-off per firm-year):} the annual and sustainability reports are parsed with Docling, split into overlapping chunks ($\sim$1{,}000 characters, 200-character overlap, sentence-aware), embedded with Mistral Embed, and stored in a \texttt{pgvector} cosine-similarity index. \textbf{Bottom lane (extraction, per indicator):} Mistral Large turns the indicator definition into a search query; the query is embedded; a hybrid retrieval combines vector similarity with BM25 lexical scoring via reciprocal rank fusion (RRF, weights $0.7/0.3$) and returns the top five chunks; Mistral Large then produces a structured extraction validated against a Zod schema and stored together with its source-page provenance. If the model reports that the information is contained in the retrieved sources but cannot be extracted as-is, the query is reformulated and retrieval is retried (at most three times).}
+  \label{fig:pipeline}
+\end{figure}
+```
+
+For each of the 25 indicators, retrieval combines two complementary signals in a single hybrid step. Mistral Large first turns the indicator definition into a natural-language search query, which is embedded with Mistral Embed and submitted to the pgvector index alongside a BM25 lexical query over the chunk text. The two ranked lists are merged via reciprocal rank fusion (RRF) with weights $0.7$ for the vector channel and $0.3$ for the lexical channel, and the top five chunks (subject to a cosine-similarity floor of $0.70$) are returned. This hybrid formulation is motivated by the observation that purely semantic retrieval occasionally misses tables or boilerplate passages that use the exact regulatory term, while pure keyword matching ignores synonymous formulations.
+
+The retrieved chunks, together with a custom prompt and a structured output schema, are passed to the language model. The prompt specifies the indicator definition, the expected unit of measurement, and instructions for handling absent disclosures. The model returns the extracted value, its source page, a confidence score in $[0,1]$, and a short justification. Outputs are validated in-flight against a Zod schema; responses that violate the schema are discarded and logged rather than retried, to avoid propagating model errors downstream. If a response is well-formed but reports that the answer is present in the retrieved sources yet could not be extracted as a clean value, the query is reformulated by the model and retrieval is repeated, up to three times in total.
+
+The loop runs over all 25 indicators per firm-year in batches of five and results are written to a relational table with one row per indicator–firm–year triplet. Each record retains the source-document identifier and page number, enabling manual verification against the original filing.
+
+## Pipeline performance
+To assess extraction quality we evaluate every AI-extracted value against a human-verified ground truth. The evaluation set used here is the human-reviewed subset of public release \texttt{v1.2} of the \emph{Main ESRS KPI} project, covering 4,608 firm--indicator--year pairs for Euro Stoxx 50 and DAX 40 companies in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI's output, replaced it with the correct number, or marked the indicator as not disclosed. Outcomes are partitioned into five mutually exclusive classes: \emph{correct} (the AI value matches the reviewer's value, including agreement on non-disclosure); \emph{wrong} (both the AI and the reviewer extracted a number but the values disagree); \emph{false negative} (the AI returned \texttt{NOT\_FOUND} but the reviewer found a value); \emph{false positive} (the AI returned a value but the reviewer marked the indicator as not disclosed); and \emph{schema error} (the AI's structured output failed Zod validation).
+
+Aggregated across all 25 indicators, the pipeline reaches an accuracy of $72\%$ on the reviewed subset (3,322 of 4,608 pairs). Breaking this down by category, governance (one indicator) and social ($75.0\%$) lie slightly above this mean while environmental indicators ($69.8\%$) lie slightly below it, driven primarily by the harder Scope 1--3 greenhouse-gas emissions. Across error modes, \emph{wrong} extractions (619 pairs, $13\%$ of the reviewed set) are the largest single failure class, followed by \emph{false negatives} (443 pairs, $10\%$); \emph{false positives} (124, $3\%$) and \emph{schema errors} (100, $2\%$) are comparatively rare.
+
+```{python}
+#| label: fig-performance
+#| fig-cap: "Per-indicator extraction accuracy on the human-reviewed subset of public release v1.2 (4,608 firm--indicator--year pairs covering Euro Stoxx 50 and DAX 40 companies in reporting years 2024--2025). Bars are sorted by accuracy. Each stacked bar shows the composition of the reviewed pairs into five outcomes; the rightmost annotation reports the number of reviewed pairs $n$ and the per-indicator accuracy. The overall accuracy of the pipeline on this set is 72\\%."
+#| fig-pos: "p"
+#| fig-width: 6.5
+#| fig-height: 7.8
+#| echo: false
+#| warning: false
+
+import json, textwrap
+import numpy as np
+import matplotlib.pyplot as plt
+
+with open("performance_snapshot.json") as f:
+    snap = json.load(f)
+
+rows = sorted(snap["by_field"], key=lambda r: r.get("accuracy_pct") or 0)
+
+def wrap(s, w=42):
+    return textwrap.fill(s[:1].upper() + s[1:], width=w)
+
+names   = [wrap(r["field_name"]) for r in rows]
+correct = np.array([r["correct"] for r in rows], dtype=float)
+wrong   = np.array([r["wrong"]   for r in rows], dtype=float)
+fn_     = np.array([r["fn"]      for r in rows], dtype=float)
+fp_     = np.array([r["fp"]      for r in rows], dtype=float)
+err     = np.array([r["error"]   for r in rows], dtype=float)
+denom   = np.maximum(correct + wrong + fn_ + fp_ + err, 1)
+to_pct  = lambda x: 100.0 * x / denom
+
+CLR_CORRECT = "#10B981"  # emerald-500
+CLR_WRONG   = "#F59E0B"  # amber-500
+CLR_FN      = "#EF4444"  # red-500
+CLR_FP      = "#8B5CF6"  # violet-500
+CLR_ERR     = "#CBD5E1"  # slate-300
+CLR_TEXT    = "#1F2937"  # slate-800
+CLR_AXIS    = "#94A3B8"  # slate-400
+
+plt.rcParams.update({
+    "font.family": "sans-serif",
+    "font.size":   8,
+    "axes.edgecolor": CLR_AXIS,
+    "axes.labelcolor": CLR_TEXT,
+    "xtick.color":    CLR_AXIS,
+    "ytick.color":    CLR_TEXT,
+})
+
+fig, ax = plt.subplots(figsize=(6.5, 7.8))
+y    = np.arange(len(rows))
+left = np.zeros(len(rows))
+segments = [
+    ("Correct",        to_pct(correct), CLR_CORRECT),
+    ("Wrong",          to_pct(wrong),   CLR_WRONG),
+    ("False negative", to_pct(fn_),     CLR_FN),
+    ("False positive", to_pct(fp_),     CLR_FP),
+    ("Schema error",   to_pct(err),     CLR_ERR),
+]
+for label, vals, color in segments:
+    ax.barh(y, vals, left=left, color=color, label=label,
+            edgecolor="white", linewidth=0.4, height=0.78)
+    left += vals
+
+# right-side annotations: n and per-indicator accuracy
+for yi, r in enumerate(rows):
+    acc = r.get("accuracy_pct") or 0
+    ax.text(102, yi, f"$n{{=}}{r['reviewed_total']}$   {acc:>2d}%",
+            va="center", ha="left", fontsize=7.5, color=CLR_TEXT, clip_on=False)
+
+ax.set_yticks(y)
+ax.set_yticklabels(names, fontsize=7.8)
+ax.set_xlim(0, 100)
+ax.set_xticks([0, 25, 50, 75, 100])
+ax.set_xticklabels(["0%", "25%", "50%", "75%", "100%"])
+ax.set_xlabel("Share of reviewed firm-indicator-year pairs", fontsize=8.5)
+ax.tick_params(axis="y", length=0)
+ax.tick_params(axis="x", length=2)
+ax.invert_yaxis()
+for spine in ("top", "right", "left"):
+    ax.spines[spine].set_visible(False)
+
+ax.legend(
+    loc="lower center", bbox_to_anchor=(0.5, 1.015),
+    ncol=5, frameon=False, fontsize=7.8,
+    handlelength=1.1, handleheight=0.9, columnspacing=1.2,
+)
+
+plt.subplots_adjust(left=0.40, right=0.82, top=0.95, bottom=0.06)
+plt.show()
+```
+
+False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3), where reports frequently use bespoke wording, hide the value in a table footnote, or report partial sub-figures that confuse the retrieval step. The same indicators also produce many \emph{wrong} extractions because firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the model occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above $84\%$; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is the lone outlier on the low end ($46\%$): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high \emph{wrong} rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.
+
+## API accessibility
+The extracted dataset is exposed through a small, versioned REST API at \href{https://api.srnav.com}{\texttt{api.srnav.com}}. Each *release* is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g.\ \texttt{v1.2}) rather than to \texttt{latest}, so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at \href{https://api.srnav.com}{\texttt{api.srnav.com}}, which serves a Swagger UI generated from the OpenAPI specification at \href{https://api.srnav.com/openapi.json}{\texttt{/openapi.json}}.
+
+Access is gated by a personal API token, requested at \href{https://srnav.com}{\texttt{srnav.com}} and passed in the standard \texttt{Authorization: Bearer} header. Tokens are scoped to the issuing account and can be rotated or revoked at any time; we ask consumers to keep them out of version control and out of figure source files. The two endpoints needed for most research workflows are:
+
+\begin{description}
+\setlength{\itemsep}{1pt}
+  \item[\texttt{GET /projects/\{slug\}/releases}] Lists all published releases for a public project, newest first, with publication and retraction timestamps and row counts. Used to discover the latest version programmatically and to track the dataset's revision history.
+  \item[\texttt{GET /projects/\{slug\}/releases/\{version\}}] Returns the full release as JSON, where \texttt{\{version\}} accepts \texttt{latest}, \texttt{v1}, or \texttt{v2.1}. A CSV variant is available at the same path with a \texttt{.csv} suffix and produces a flattened, header-included file suitable for direct loading into a statistical package.
+\end{description}
+
+Each row of a release identifies a single firm--indicator--year observation and carries the published value together with the firm's identifier, ISIN, country, sector, industry, and stock index membership; the indicator's slug, name, category, unit, and data type; the year; a \texttt{source} flag (\texttt{human} for reviewer-verified values, \texttt{ai} for AI-only extractions awaiting review); the source document identifier; and a page reference for traceability against the original filing.
+
+A minimal request fetches the latest release:
+
+```bash
+curl -H "Authorization: Bearer $SRN_TOKEN" \
+  "https://api.srnav.com/projects/main-esrs-kpi/releases/latest"
+```
+
+The same payload is one line away from a tidy data frame in Python — the following snippet pins the request to a specific release and filters to the GHG indicators for two firms:
+
+```python
+import os, requests, pandas as pd
+
+VERSION = "v1.2"
+headers = {"Authorization": f"Bearer {os.environ['SRN_TOKEN']}"}
+
+resp = requests.get(
+    f"https://api.srnav.com/projects/main-esrs-kpi/releases/{VERSION}",
+    headers=headers, timeout=30,
+)
+resp.raise_for_status()
+release = resp.json()
+
+df = pd.DataFrame(release["values"])
+df["value"] = pd.to_numeric(df["value"], errors="coerce")  # NOT_FOUND -> NaN
+
+ghg = df[
+    df["field_slug"].str.startswith("ghg_") &
+    df["isin"].isin(["DE000A1EWWW0", "DE0007164600"])  # Adidas, SAP
+]
+print(ghg[["company_name", "year", "field_slug", "value", "unit", "source"]])
+```
+
+The CSV variant is most convenient in R, where it can be read in a single call:
+
+```r
+library(readr)
+
+token   <- Sys.getenv("SRN_TOKEN")
+version <- "v1.2"
+
+df <- read_csv(
+  paste0("https://api.srnav.com/projects/main-esrs-kpi/releases/",
+         version, ".csv"),
+  col_types = cols(.default = col_character(), value = col_double()),
+  na        = c("", "NA", "NOT_FOUND"),
+  show_col_types = FALSE,
+  guess_max = 1e5,
+  # readr passes header arguments via `httr::add_headers` when the URL is fetched
+  # by an internal call to httr; for explicit auth use the `httr2` recipe below.
+)
+```
+
+For programmatic discovery of the most recent published release and for any workflow that requires per-request control (e.g.\ rate-limit handling or audit logging), \texttt{httr2} composes cleanly with the `releases` index:
+
+```r
+library(httr2)
+
+req <- request("https://api.srnav.com/projects/main-esrs-kpi/releases") |>
+  req_auth_bearer_token(Sys.getenv("SRN_TOKEN")) |>
+  req_user_agent("srn-research/0.1")
+
+releases <- resp_body_json(req_perform(req))
+latest   <- Filter(\(r) is.null(r$retracted_at), releases)[[1]]$version
+message("Pinned to ", latest)
+```
+
+We encourage users to cite the dataset by its release version (e.g., *Sustainability Reporting Navigator, Main ESRS KPI dataset, release v1.2, published 2026-05-14*) and, where possible, to record the release's \texttt{published\_at} timestamp in supplementary materials so that subsequent retractions or revisions can be detected. Requests, feature suggestions, and bug reports are welcome by email at \href{mailto:hello@srnav.com}{\texttt{hello@srnav.com}}.
+
+
+### References
+
+::: {#refs}
+:::
+
