@@ -1,11 +1,11 @@
 ---
-title: "Documentation for the SRN Data Dashboard"
+title: "Documentation for the SRN Benchmarking Dashboard"
 author:
     - name: Sustainability Reporting Navigator
       url: https://srnav.com
 date: today
 date-modified: today
-description: "Technical documentation of the ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance dataset."
+description: "Technical documentation of the Transparency and ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance benchmarking dataset."
 lang: en
 format:
   pdf:
@@ -84,8 +84,8 @@ bibliography: references.bib
 citeproc: true
 link-citations: true
 abstract: |
-  This whitepaper documents the automated ESG indicator extraction pipeline
-  of the Sustainability Reporting Navigator (SRN). The pipeline retrieves
+  This whitepaper documents the automated Transparency and ESG indicator extraction pipeline
+  of the Sustainability Reporting Navigator (SRN). The Transparency pipeline captures textual characteristics such as length and readability as well as environmental and social topic shares. The ESG indicator pipeline retrieves
   and extracts a predefined set of 25 ESG indicators from firms' annual and
   sustainability reports using a hybrid retrieval strategy combining semantic
   similarity search and keyword matching, followed by structured LLM extraction.
