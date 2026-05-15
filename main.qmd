@@ -84,8 +84,7 @@ bibliography: references.bib
 citeproc: true
 link-citations: true
 abstract: |
-  This whitepaper documents the automated Transparency dimension and ESG indicator extraction pipeline
-  of the Sustainability Reporting Navigator (SRN). The Transparency dimension pipeline captures textual characteristics such as length and readibility as well as environmental and social topic shares. The ESG indicator pipeline retrieves
+  This whitepaper documents the automated Transparency dimension and environmental, social, and governance (ESG) indicator extraction pipeline   of the Sustainability Reporting Navigator (SRN). The Transparency dimension pipeline captures textual characteristics such as length and readibility as well as environmental and social topic shares. The ESG indicator pipeline retrieves
   and extracts a predefined set of 25 ESG indicators from firms' annual and
   sustainability reports using a hybrid retrieval strategy combining semantic
   similarity search and keyword matching, followed by structured LLM extraction.
@@ -124,7 +123,7 @@ This section documents how the SRN extracts the **quantitative** ESG indicators 
 
 ## Data points
 
-Our list of datapoints covers all environmental, social, and governance (ESG) dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).
+Our list of datapoints covers all ESG dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).
 
 All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release \texttt{v1.2}, both served by the SRN community page without authentication.
 
