@@ -1,11 +1,11 @@
 ---
-title: "Documentation for the SRN Benchmarking Dashboard"
+title: "Documentation for the SRN Data Dashboard"
 author:
     - name: Sustainability Reporting Navigator
       url: https://srnav.com
 date: today
 date-modified: today
-description: "Technical documentation of the Transparency and ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance benchmarking dataset."
+description: "Technical documentation of the ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance dataset."
 lang: en
 format:
   pdf:
@@ -84,16 +84,13 @@ bibliography: references.bib
 citeproc: true
 link-citations: true
 abstract: |
-  This whitepaper documents the automated Transparency and ESG indicator extraction pipeline
-  of the Sustainability Reporting Navigator (SRN). The Transparency pipeline captures textual characteristics such as length and readability as well as environmental and social topic shares. The ESG indicator pipeline retrieves
+  This whitepaper documents the automated ESG indicator extraction pipeline
+  of the Sustainability Reporting Navigator (SRN). The pipeline retrieves
   and extracts a predefined set of 25 ESG indicators from firms' annual and
   sustainability reports using a hybrid retrieval strategy combining semantic
   similarity search and keyword matching, followed by structured LLM extraction.
   We describe the design choices, retrieval parameters, and data schema. For technical questions and licensing inquiries, please reach out via email at [hello@srnav.com](mailto:hello@srnav.com).
 ---
-
-
-
 
 # Transparency
 
@@ -106,18 +103,18 @@ In what follows we summarise the two transparency dimensions exposed through the
 For each (firm, year, report) we compute a small number of report-level features describing the document's overall structure and writing style. They are stored alongside the extracted ESG indicators and surface in the dashboard as a single row per report. The features fall into three groups:
 
 - **Length and structure.** Total token count, sentence count, average sentence length, and the number of pages devoted to environmental and social topics (derived from the sentence-level classifier introduced in the next subsection).
-- **Readability.** [TODO: confirm which scores are computed — Flesch Reading Ease, Flesch--Kincaid Grade Level, Gunning Fog, or a combination. Note the tokenizer / sentence splitter used so the numbers are reproducible.]
-- **Boilerplate and specificity.** [TODO: describe how boilerplate is identified (e.g., cross-firm n-gram overlap, repeated stock phrases) and how a specificity score is assigned to each report, citing the underlying method.]
+- **Readability.** \[TODO: confirm which scores are computed — Flesch Reading Ease, Flesch--Kincaid Grade Level, Gunning Fog, or a combination. Note the tokenizer / sentence splitter used so the numbers are reproducible.\]
+- **Boilerplate and specificity.** \[TODO: describe how boilerplate is identified (e.g., cross-firm n-gram overlap, repeated stock phrases) and how a specificity score is assigned to each report, citing the underlying method.\]
 
-[TODO: short table listing the exact column names exposed in the dashboard / API, with units and a one-line description per column. This mirrors Table~\ref{tab:indicators} for the quantitative side.]
+\[TODO: short table listing the exact column names exposed in the dashboard / API, with units and a one-line description per column. This mirrors Table\~\ref{tab:indicators} for the quantitative side.\]
 
 ## Environmental and social topics
 
 At the sentence level, we tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model trained in @Donau2024-yc; we run it sentence-by-sentence over the Docling output of both the annual and sustainability report. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model's confidence score, and the original page number, which allows users to drill from any aggregate transparency statistic back to the source passage.
 
-[TODO: enumerate the topic labels surfaced in the dashboard (e.g., climate change, pollution, water and marine resources, biodiversity, circular economy, own workforce, workers in the value chain, affected communities, consumers and end-users — and any social/governance labels you actively expose).]
+\[TODO: enumerate the topic labels surfaced in the dashboard (e.g., climate change, pollution, water and marine resources, biodiversity, circular economy, own workforce, workers in the value chain, affected communities, consumers and end-users — and any social/governance labels you actively expose).\]
 
-[TODO: one paragraph on aggregation — how sentence-level predictions roll up to the report-level "share of text on topic X" and "number of pages on topic X" features used in the dashboard, including the decision threshold applied to the model's score.]
+\[TODO: one paragraph on aggregation — how sentence-level predictions roll up to the report-level "share of text on topic X" and "number of pages on topic X" features used in the dashboard, including the decision threshold applied to the model's score.\]
 
 [TODO: one paragraph on validation — how the classifier was evaluated against a human-labelled sample, with the headline precision / recall numbers reported in @Donau2024-yc and any subsequent re-validation on the SRN corpus.]
 
@@ -125,9 +122,11 @@ At the sentence level, we tag each parsed sentence with one or more topic labels
 
 This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data points]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]), and finally describe how the resulting dataset is exposed to downstream researchers (Section [API accessibility]).
 
-
 ## Data points
-Our list of datapoints covers all environmental, social, and governance (ESG) dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive). All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release \texttt{v1.2}, both served by the SRN community page without authentication.
+
+Our list of datapoints covers all environmental, social, and governance (ESG) dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).
+
+All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release \texttt{v1.2}, both served by the SRN community page without authentication.
 
 ```{python}
 #| label: data-acquisition
@@ -272,8 +271,166 @@ out += [
 print("\n".join(out))
 ```
 
+## Data Point Definition Guide
+
+### Environmental
+
+**Total energy consumption** *(MWh)*
+
+Report the undertaking's total energy consumption from own operations in MWh. Capture one explicit total value only. Include energy from fossil, nuclear, and renewable sources if reported as part of total energy consumption. Do not use energy intensity, energy savings, production volumes, percentages, or segment-only values.
+
+*Variants/Problems:* ---
+
+**Total energy consumption from fossil sources** *(MWh)*
+
+Extract the explicitly reported total energy consumption from fossil sources in MWh for the reporting year, relating to own operations. Record one absolute total value only. Include fossil energy from fuels and purchased fossil-based electricity, heat, steam, or cooling only if they are included in the reported total fossil energy consumption. Do not use total energy consumption, coal/oil/gas subcomponents instead of the total, energy intensity, energy savings, percentages, or energy production values. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+**Total energy consumption from renewable sources** *(MWh)*
+
+Extract the explicitly reported total energy consumption from renewable sources in MWh for the reporting year, relating to own operations. Record one absolute total value only. Include renewable fuel consumption, purchased or acquired renewable electricity, heat, steam, or cooling, and self-generated non-fuel renewable energy only if they are included in the reported total renewable energy consumption. Do not use total energy consumption, renewable subcomponents instead of the total, energy intensity, energy savings, percentages, renewable energy production, or installed capacity values. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+**Scope 1 greenhouse gas emissions** *(tCO~2~eq)*
+
+The absolute value of Scope 1 direct emissions in the given year. Do not use a future target value or the emissions intensity.
+
+*Variants/Problems:* ---
+
+**Scope 2 greenhouse gas emissions (location-based)** *(tCO~2~eq)*
+
+The absolute value of location-based Scope 2 emissions in the given year. Do not use a future target value or the emissions intensity.
+
+*Variants/Problems:* ---
+
+**Scope 2 greenhouse gas emissions (market-based)** *(tCO~2~eq)*
+
+The absolute value of market-based Scope 2 emissions in the given year. Do not use a future target value or the emissions intensity.
+
+*Variants/Problems:* ---
+
+**Total Scope 3 greenhouse gas emissions** *(tCO~2~eq)*
+
+The absolute value of total Scope 3 emissions, i.e., the sum of all Scope 3 categories in the given year. Do not use a future target value or the emissions intensity.
+
+*Variants/Problems:* ---
+
+**Total emissions (location-based)** *(tCO~2~eq)*
+
+The sum of Scope 1, location-based Scope 2, and total Scope 3 emissions in the given year. Do not use a future target value or the emissions intensity.
+
+*Variants/Problems:* ---
+
+**Total emissions (market-based)** *(tCO~2~eq)*
+
+The sum of Scope 1, market-based Scope 2, and total Scope 3 emissions in the given year. Do not use a future target value or the emissions intensity.
+
+*Variants/Problems:* ---
+
+**Total water consumption** *(m^3^)*
+
+Extract the explicitly reported total water consumption from own operations in m^3^ for the reporting year. Record one absolute total value only. Do not use water withdrawal, water discharge, water intensity, recycling or reuse volumes, percentages, targets, or segment-only values instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+**Total use of land** *(m^2^)*
+
+Extract the explicitly reported total land use in m^2^ for the reporting year, relating to own operations where disclosed as a biodiversity- or ecosystem-related land-use metric. Record one absolute total value only. Do not use site area, protected-area area, land-use change over time, land converted, floor area, operational footprint, percentages, or land-related values reported in other units instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+**Total weight of waste generated** *(t)*
+
+Extract the explicitly reported total weight of waste generated from own operations in tonnes for the reporting year. Record one absolute total value only. Do not use waste diverted from disposal, waste directed to disposal, recycled waste, hazardous waste only, non-hazardous waste only, percentages, intensity metrics, or waste values reported for individual streams instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+**Total weight of non-recycled waste** *(t)*
+
+Extract the explicitly reported total weight of non-recycled waste from own operations in tonnes for the reporting year. Record one absolute total value only. Do not use the percentage of non-recycled waste, total waste generated, waste diverted from disposal, waste directed to disposal, recycled waste, hazardous waste only, non-hazardous waste only, or waste values reported for individual treatment types instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+**Share of non-recycled waste to total waste** *(%)*
+
+Extract the explicitly reported share of non-recycled waste relative to total waste from own operations for the reporting year, expressed as a percentage. Record one reported percentage value only. Do not use the total weight of non-recycled waste, total waste generated, recycled waste share, waste diverted from disposal, hazardous waste only, non-hazardous waste only, or percentages for individual waste streams or treatment types instead of the total share. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
+
+*Variants/Problems:* ---
+
+### Governance
+
+**Total number of confirmed incidents of corruption or bribery**
+
+Extract the explicitly reported total number of confirmed incidents of corruption or bribery during the reporting period. Record one absolute total value only. Include incidents involving actors in the value chain only where the undertaking or its own workers are directly involved. Do not use the number of convictions, legal cases, dismissals or disciplinary actions, terminated or non-renewed business partner contracts, or qualitative descriptions of incidents instead of the total number of confirmed incidents. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* ---
+
+### Social
+
+**Total number of employees**
+
+Extract the explicitly reported total number of employees in the undertaking's own workforce for the reporting period. Record one absolute total value only. Do not use full-time equivalent (FTE) values, permanent employees only, temporary employees only, non-guaranteed hours employees only, employees by gender, employees by country, or numbers relating to workers who are not employees instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* Often there are different definitions of the total number of employees, especially between the financial and the sustainability report. We we find several one, we would choose the one reported in the sustainability report.
+
+**Total number of female employees**
+
+Extract the explicitly reported total number of female employees in the undertaking's own workforce for the reporting period. Record one absolute total value only. Do not use the total number of employees, percentages or gender shares, female permanent employees only, female temporary employees only, female non-guaranteed hours employees only, or figures relating to workers who are not employees instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* ---
+
+**Share of employees aged 50 or older** *(%)*
+
+Extract the explicitly reported share of employees aged 50 or older in the undertaking's own workforce for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the total number of employees aged 50 or older, the total number of employees, age-group counts without a reported percentage, percentages for other age groups, or figures relating to workers who are not employees instead of the share. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* ---
+
+**Rate of employee turnover** *(%)*
+
+Extract the explicitly reported rate of employee turnover in the undertaking's own workforce for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the total number of employees who left the undertaking, the total number of employees, hiring rates, retention rates, percentages for specific employee groups only, or figures relating to workers who are not employees instead of the turnover rate. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* ---
+
+**Percentage of total employees covered by collective bargaining agreements** *(%)*
+
+Extract the explicitly reported percentage of the undertaking's total employees covered by collective bargaining agreements for the reporting period. Record one reported percentage value only. Do not use the existence of collective bargaining agreements without a reported coverage percentage, country-level percentages only, region-level percentages only, percentages relating to non-employees, or figures relating to workers' representatives instead of the total employee coverage percentage. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* —
+
+**Share of women in top management** *(%)*
+
+Extract the explicitly reported share of women in top management for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the number of women in top management, the share of women in the total workforce, the share of women on the board, gender diversity metrics for management levels other than top management, or percentages for age groups instead of the share of women in top management. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* Different definitions of top management at firm-level.
+
+**Rate of recordable work-related accidents** *(per million hours worked)*
+
+Extract the rate of recordable work-related accidents defined as the number of cases divided by the number of total hours worked by people in its own workforce, multiplied by 1,000,000. This represents the number of cases per one million hours worked and roughly corresponds to the total hours worked by 500 full-time workers in one year.
+
+*Variants/Problems:* ---
+
+**Gender pay gap** *(%)*
+
+Extract the gender pay gap defined as the difference in average pay levels between female and male employees, expressed as a percentage of the average pay level of male employees.
+
+*Variants/Problems:* Some companies report negative gender pay gap (i.e. women earn more than man). In this case we report negative values.
+
+**Annual total remuneration ratio**
+
+Extract the ratio of the highest-paid individual to the median annual total remuneration for all employees (excluding the highest-paid individual).
+
+*Variants/Problems:* Different ways of reporting (e.g., 250:1, 250, 25000%). In SRN Lab we would report the remuneration ratio from the example as 250.
+
+**Number of severe human rights issues and incidents**
+
+Extract the explicitly reported number of severe human rights issues and incidents connected to the company's upstream and downstream value chain during the reporting period. Record one absolute total value only. Do not use general human rights incidents not identified as severe, incidents involving the company's own workforce only, qualitative descriptions of cases, legal proceedings, remediation actions, or policy statements instead of the total number of severe human rights issues and incidents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
+
+*Variants/Problems:* ---
 
 ## Pipeline setup
+
 Our extraction pipeline builds on the design described by @forster2026. For each firm-year, we extract a predefined set of 25 ESG indicators from the firm's annual report and sustainability report. Figure \ref{fig:pipeline} summarises the pipeline end-to-end.
 
 Text, tables, and figures of the source documents are first parsed and then chunked — that is, split into smaller units — using Docling [@docling2024]. To make chunks quickly retrievable, we embed each chunk with Mistral's text embedding model, `mistral-embed-2312` [@mistralembed2023]. The resulting numerical vectors are stored in a cosine-similarity index that serves as the backbone for retrieval.
@@ -362,6 +519,7 @@ The retrieved chunks, together with a custom prompt and a structured output sche
 The loop runs over all 25 indicators per firm-year in batches of five and results are written to a relational table with one row per indicator–firm–year triplet. Each record retains the source-document identifier and page number, enabling manual verification against the original filing.
 
 ## Pipeline performance
+
 To assess extraction quality we evaluate every AI-extracted value against a human-verified ground truth. The evaluation set used here is the human-reviewed subset of public release \texttt{v1.2} of the \emph{Main ESRS KPI} project, covering 4,608 firm--indicator--year pairs for Euro Stoxx 50 and DAX 40 companies in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI's output, replaced it with the correct number, or marked the indicator as not disclosed. Outcomes are partitioned into five mutually exclusive classes: \emph{correct} (the AI value matches the reviewer's value, including agreement on non-disclosure); \emph{wrong} (both the AI and the reviewer extracted a number but the values disagree); \emph{false negative} (the AI returned \texttt{NOT\_FOUND} but the reviewer found a value); \emph{false positive} (the AI returned a value but the reviewer marked the indicator as not disclosed); and \emph{schema error} (the AI's structured output failed Zod validation).
 
 Aggregated across all 25 indicators, the pipeline reaches an accuracy of $72\%$ on the reviewed subset (3,322 of 4,608 pairs). Breaking this down by category, governance (one indicator) and social ($75.0\%$) lie slightly above this mean while environmental indicators ($69.8\%$) lie slightly below it, driven primarily by the harder Scope 1--3 greenhouse-gas emissions. Across error modes, \emph{wrong} extractions (619 pairs, $13\%$ of the reviewed set) are the largest single failure class, followed by \emph{false negatives} (443 pairs, $10\%$); \emph{false positives} (124, $3\%$) and \emph{schema errors} (100, $2\%$) are comparatively rare.
@@ -459,7 +617,8 @@ plt.show()
 False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3), where reports frequently use bespoke wording, hide the value in a table footnote, or report partial sub-figures that confuse the retrieval step. The same indicators also produce many \emph{wrong} extractions because firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the model occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above $84\%$; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is the lone outlier on the low end ($46\%$): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high \emph{wrong} rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.
 
 ## API accessibility
-The extracted dataset is exposed through a small, versioned REST API at \href{https://api.srnav.com}{\texttt{api.srnav.com}}. Each *release* is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g.\ \texttt{v1.2}) rather than to \texttt{latest}, so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at \href{https://api.srnav.com}{\texttt{api.srnav.com}}, which serves a Swagger UI generated from the OpenAPI specification at \href{https://api.srnav.com/openapi.json}{\texttt{/openapi.json}}.
+
+The extracted dataset is exposed through a small, versioned REST API at \href{https://api.srnav.com}{\texttt{api.srnav.com}}. Each *release* is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g. \texttt{v1.2}) rather than to \texttt{latest}, so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at \href{https://api.srnav.com}{\texttt{api.srnav.com}}, which serves a Swagger UI generated from the OpenAPI specification at \href{https://api.srnav.com/openapi.json}{\texttt{/openapi.json}}.
 
 Access is gated by a personal API token, requested at \href{https://srnav.com}{\texttt{srnav.com}} and passed in the standard \texttt{Authorization: Bearer} header. Tokens are scoped to the issuing account and can be rotated or revoked at any time; we ask consumers to keep them out of version control and out of figure source files. The two endpoints needed for most research workflows are:
 
@@ -473,14 +632,14 @@ Each row of a release identifies a single firm--indicator--year observation and 
 
 A minimal request fetches the latest release:
 
-```bash
+``` bash
 curl -H "Authorization: Bearer $SRN_TOKEN" \
   "https://api.srnav.com/projects/main-esrs-kpi/releases/latest"
 ```
 
 The same payload is one line away from a tidy data frame in Python — the following snippet pins the request to a specific release and filters to the GHG indicators for two firms:
 
-```python
+``` python
 import os, requests, pandas as pd
 
 VERSION = "v1.2"
@@ -505,7 +664,7 @@ print(ghg[["company_name", "year", "field_slug", "value", "unit", "source"]])
 
 The CSV variant is most convenient in R, where it can be read in a single call:
 
-```r
+``` r
 library(readr)
 
 token   <- Sys.getenv("SRN_TOKEN")
@@ -523,9 +682,9 @@ df <- read_csv(
 )
 ```
 
-For programmatic discovery of the most recent published release and for any workflow that requires per-request control (e.g.\ rate-limit handling or audit logging), \texttt{httr2} composes cleanly with the `releases` index:
+For programmatic discovery of the most recent published release and for any workflow that requires per-request control (e.g. rate-limit handling or audit logging), \texttt{httr2} composes cleanly with the `releases` index:
 
-```r
+``` r
 library(httr2)
 
 req <- request("https://api.srnav.com/projects/main-esrs-kpi/releases") |>
@@ -539,9 +698,7 @@ message("Pinned to ", latest)
 
 We encourage users to cite the dataset by its release version (e.g., *Sustainability Reporting Navigator, Main ESRS KPI dataset, release v1.2, published 2026-05-14*) and, where possible, to record the release's \texttt{published\_at} timestamp in supplementary materials so that subsequent retractions or revisions can be detected. Requests, feature suggestions, and bug reports are welcome by email at \href{mailto:hello@srnav.com}{\texttt{hello@srnav.com}}.
 
-
 ### References
 
 ::: {#refs}
 :::
-
