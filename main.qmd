@@ -120,7 +120,7 @@ At the sentence level, we tag each parsed sentence with one or more topic labels
 
 # Performance
 
-This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data points]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]), and finally describe how the resulting dataset is exposed to downstream researchers (Section [API accessibility]).
+This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data points]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]), and finally describe how the resulting dataset is made available to researchers (Section [API accessibility]).
 
 ## Data points
 
