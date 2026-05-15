@@ -1,11 +1,11 @@
 ---
-title: "Documentation for the SRN Data Dashboard"
+title: "Documentation for the SRN Benchmarking Dashboard"
 author:
     - name: Sustainability Reporting Navigator
       url: https://srnav.com
 date: today
 date-modified: today
-description: "Technical documentation of the ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance dataset."
+description: "Technical documentation of the Transparency dimension and ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator's ESG performance dataset."
 lang: en
 format:
   pdf:
@@ -84,8 +84,8 @@ bibliography: references.bib
 citeproc: true
 link-citations: true
 abstract: |
-  This whitepaper documents the automated ESG indicator extraction pipeline
-  of the Sustainability Reporting Navigator (SRN). The pipeline retrieves
+  This whitepaper documents the automated Transparency dimension and ESG indicator extraction pipeline
+  of the Sustainability Reporting Navigator (SRN). The Transparency dimension pipeline captures textual characteristics such as length and readibility as well as environmental and social topic shares. The ESG indicator pipeline retrieves
   and extracts a predefined set of 25 ESG indicators from firms' annual and
   sustainability reports using a hybrid retrieval strategy combining semantic
   similarity search and keyword matching, followed by structured LLM extraction.
@@ -94,7 +94,7 @@ abstract: |
 
 # Transparency
 
-The *transparency* dimensions captured by the SRN dataset describe **how** firms report rather than **what** they report. They are derived from the same annual and sustainability reports used for the quantitative ESG indicators (see [Performance]), but rather than extracting individual numbers, we measure textual properties of each document — its length, readability, topic coverage, and the specificity with which it discusses environmental and social issues. Reports are first parsed with Docling [@docling2024] and then processed with Python at the sentence level. The downstream language model used to classify environmental and social passages was originally developed for @Donau2024-yc; we adopt their label set and decision thresholds without modification, and refer the reader to that paper for full methodological detail.
+This section documents how the SRN extracts the **Transparency** dimensions from firms' annual and sustainability reports. The transparency dimensions captured by the SRN dataset describe **how** firms report rather than **what** they report. To that end, we capture textual characteristics (e.g., length and readability) and environmental and social topic shares. Reports are first parsed with Docling [@docling2024] and then processed with Python at the sentence level. The downstream language model used to classify passages into environmental and social topics was originally developed for @Donau2024-yc; we adopt their label set and decision thresholds without modification, and refer the reader to that paper for full methodological detail.
 
 In what follows we summarise the two transparency dimensions exposed through the dashboard: a set of report-level textual characteristics (Section [Textual characteristics]) and a sentence-level classifier that locates passages addressing environmental and social topics (Section [Environmental and social topics]).
 
