@@ -102,7 +102,7 @@ For each (firm, year, report) we compute a set of report-level features describi
 
 - **Length and structure.** Total word count (`total_words`), page count (`pages`), and the number of tables (`total_tables`). `image_ratio` is the share of pages that contain at least one image.
 
-- **Readability.** `reading_difficulty` is the mean Gunning Fog index computed at the sentence level and averaged over the document. Higher values indicate more complex prose. `tone` is a sentiment ratio $(w^{+} - w^{-})/(w^{+} + w^{-})$, where $w^{+}$ and $w^{-}$ are the counts of positive and negative words from the Loughran--McDonald (2011) financial-sentiment dictionary; the ratio is set to zero when both counts are zero. `numbers` is the density of numerical tokens, defined as total numeric tokens divided by total words.
+- **Readability.** `reading_difficulty` is the mean Gunning Fog index computed at the sentence level and averaged over the document. Higher values indicate more complex prose. `tone` is a sentiment ratio $(w^{+} - w^{-})/(w^{+} + w^{-})$, where $w^{+}$ and $w^{-}$ are the counts of positive and negative words from the @Loughran2011 financial-sentiment dictionary; the ratio is set to zero when both counts are zero. `numbers` is the density of numerical tokens, defined as total numeric tokens divided by total words.
 
 
 ## Environmental and social topics
@@ -117,18 +117,18 @@ For each topic, we report the share of sentences in the sustainability statement
 The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc. @tbl-transparency displays all transparency dimensions stored in the `transparency` array.
 
 | Ref | Description | Unit |
-|---|---|--|
-| `total_words_unscaled` | Total number of words in the report | word count |
-| `pages` | Total page count as extracted from the PDF | pages |
-| `pct_e1_climate` – `pct_e5_waste` | Fraction of words covering each environmental ESRS topic | share (0–1) |
-| `pct_s1_ownworkforce` – `pct_s4_consumers` | Fraction of words covering each social ESRS topic | share (0–1) |
-| `reading_difficulty` | Mean Gunning Fog index across sentences; higher = more complex | Fog index |
-| `tone` | Loughran–McDonald sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ | ratio (−1 to 1) |
-| `numbers` | Numeric-token density: total numeric tokens / total words | ratio (0–1) |
-| `image_ratio` | Share of pages containing at least one image (three highest values trimmed as outliers) | share (0–1) |
-| `total_tables` | Number of tables detected in the PDF layout | count |
+|--|----|--|
+| Total words | Total number of words in the report | — |
+| Pages | Total page count as extracted from the PDF | — |
+| E1 – E5 | Share of disclosure covering each environmental ESRS topic | share (0–1) |
+| S1 – S4 | Share of disclosure covering each social ESRS topic | share (0–1) |
+| Reading difficulty | Mean Gunning Fog index across pages; higher = more complex | Fog index |
+| Tone | @Loughran2011 sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ | ratio (−1 to 1) |
+| Numbers | Number of numeric tokens detected in the report | — |
+| Image ratio | Share of pages containing at least one image | share (0–1) |
+| Tables | Number of tables detected in the report| — |
 
-: Report-level textual features stored in the `transparency` array. {#tbl-transparency}
+: Report-level textual features stored in the transparency array. {#tbl-transparency}
 
 # Performance
 

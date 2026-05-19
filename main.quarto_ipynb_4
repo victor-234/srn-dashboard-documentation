@@ -123,18 +123,18 @@
         "The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc. @tbl-transparency displays all transparency dimensions stored in the `transparency` array.\n",
         "\n",
         "| Ref | Description | Unit |\n",
-        "|---|---|--|\n",
-        "| `total_words_unscaled` | Total number of words in the report | word count |\n",
-        "| `pages` | Total page count as extracted from the PDF | pages |\n",
-        "| `pct_e1_climate` – `pct_e5_waste` | Fraction of words covering each environmental ESRS topic | share (0–1) |\n",
-        "| `pct_s1_ownworkforce` – `pct_s4_consumers` | Fraction of words covering each social ESRS topic | share (0–1) |\n",
-        "| `reading_difficulty` | Mean Gunning Fog index across sentences; higher = more complex | Fog index |\n",
-        "| `tone` | Loughran–McDonald sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ | ratio (−1 to 1) |\n",
-        "| `numbers` | Numeric-token density: total numeric tokens / total words | ratio (0–1) |\n",
-        "| `image_ratio` | Share of pages containing at least one image (three highest values trimmed as outliers) | share (0–1) |\n",
-        "| `total_tables` | Number of tables detected in the PDF layout | count |\n",
+        "|--|----|--|\n",
+        "| Total words | Total number of words in the report | — |\n",
+        "| Pages | Total page count as extracted from the PDF | — |\n",
+        "| E1 – E5 | Share of disclosure covering each environmental ESRS topic | share (0–1) |\n",
+        "| S1 – S4 | Share of disclosure covering each social ESRS topic | share (0–1) |\n",
+        "| Reading difficulty | Mean Gunning Fog index across pages; higher = more complex | Fog index |\n",
+        "| Tone | @Loughran2011 sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ | ratio (−1 to 1) |\n",
+        "| Numbers | Number of numeric tokens detected in the report | — |\n",
+        "| Image ratio | Share of pages containing at least one image | share (0–1) |\n",
+        "| Tables | Number of tables detected in the report| — |\n",
         "\n",
-        ": Report-level textual features stored in the `transparency` array. {#tbl-transparency}\n",
+        ": Report-level textual features stored in the transparency array. {#tbl-transparency}\n",
         "\n",
         "# Performance\n",
         "\n",
@@ -146,7 +146,7 @@
         "\n",
         "All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release \\texttt{v1.2}, both served by the SRN community page without authentication."
       ],
-      "id": "83f4ff29"
+      "id": "dfb6e3d3"
     },
     {
       "cell_type": "code",
@@ -299,7 +299,7 @@
         "\n",
         "print(\"\\n\".join(out))"
       ],
-      "id": "1444c23d",
+      "id": "a278e1de",
       "execution_count": null,
       "outputs": []
     },
@@ -560,7 +560,7 @@
         "\n",
         "Aggregated across all 25 indicators, the pipeline reaches an accuracy of $72\\%$ on the reviewed subset (3,322 of 4,608 pairs). Breaking this down by category, governance (one indicator) and social ($75.0\\%$) lie slightly above this mean while environmental indicators ($69.8\\%$) lie slightly below it, driven primarily by the harder Scope 1--3 greenhouse-gas emissions. Across error modes, \\emph{wrong} extractions (619 pairs, $13\\%$ of the reviewed set) are the largest single failure class, followed by \\emph{false negatives} (443 pairs, $10\\%$); \\emph{false positives} (124, $3\\%$) and \\emph{schema errors} (100, $2\\%$) are comparatively rare."
       ],
-      "id": "3322631d"
+      "id": "2d87ddda"
     },
     {
       "cell_type": "code",
@@ -752,7 +752,7 @@
         "::: {#refs}\n",
         ":::"
       ],
-      "id": "99f6ad6e"
+      "id": "a67ba9cf"
     }
   ],
   "metadata": {
