@@ -98,13 +98,12 @@ In what follows we summarise the two transparency dimensions exposed through the
 
 ## Textual characteristics
 
-For each (firm, year, report) we compute a small number of report-level features describing the document's overall structure and writing style. They are stored alongside the extracted ESG indicators and are displayed in the dashboard as a single row per report. The features fall into three groups:
+For each (firm, year, report) we compute a set of report-level features describing the document's overall structure and writing style. They are stored alongside the extracted ESG indicators and exposed in the API as a single row per report under the `transparency` field. The features fall into three groups:
 
-- **Length and structure.** Total token count, sentence count, average sentence length, and the number of pages devoted to environmental and social topics (derived from the sentence-level classifier introduced in the next subsection).
-- **Readability.** \[TODO: confirm which scores are computed — Flesch Reading Ease, Flesch--Kincaid Grade Level, Gunning Fog, or a combination. Note the tokenizer / sentence splitter used so the numbers are reproducible.\]
-- **Boilerplate and specificity.** \[TODO: describe how boilerplate is identified (e.g., cross-firm n-gram overlap, repeated stock phrases) and how a specificity score is assigned to each report, citing the underlying method.\]
+- **Length and structure.** Total word count (`total_words`), page count (`pages`), and the number of tables (`total_tables`). `image_ratio` is the share of pages that contain at least one image.
 
-\[TODO: short table listing the exact column names exposed in the dashboard / API, with units and a one-line description per column. This mirrors Table\~\ref{tab:indicators} for the quantitative side.\]
+- **Readability.** `reading_difficulty` is the mean Gunning Fog index computed at the sentence level and averaged over the document. Higher values indicate more complex prose. `tone` is a sentiment ratio $(w^{+} - w^{-})/(w^{+} + w^{-})$, where $w^{+}$ and $w^{-}$ are the counts of positive and negative words from the Loughran--McDonald (2011) financial-sentiment dictionary; the ratio is set to zero when both counts are zero. `numbers` is the density of numerical tokens, defined as total numeric tokens divided by total words.
+
 
 ## Environmental and social topics
 
@@ -115,7 +114,21 @@ The classifier covers nine topic labels aligned with the topical ESRS standards:
 
 For each topic, we report the share of sentences in the sustainability statement assigned to that label, aggregated across all sentences classified as ES-relevant by the model. A sentence is attributed to a topic when the model's confidence score exceeds the decision threshold selected during validation.
 
-The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc.
+The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc. @tbl-transparency displays all transparency dimensions stored in the `transparency` array.
+
+| Ref | Description | Unit |
+|---|---|--|
+| `total_words_unscaled` | Total number of words in the report | word count |
+| `pages` | Total page count as extracted from the PDF | pages |
+| `pct_e1_climate` – `pct_e5_waste` | Fraction of words covering each environmental ESRS topic | share (0–1) |
+| `pct_s1_ownworkforce` – `pct_s4_consumers` | Fraction of words covering each social ESRS topic | share (0–1) |
+| `reading_difficulty` | Mean Gunning Fog index across sentences; higher = more complex | Fog index |
+| `tone` | Loughran–McDonald sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ | ratio (−1 to 1) |
+| `numbers` | Numeric-token density: total numeric tokens / total words | ratio (0–1) |
+| `image_ratio` | Share of pages containing at least one image (three highest values trimmed as outliers) | share (0–1) |
+| `total_tables` | Number of tables detected in the PDF layout | count |
+
+: Report-level textual features stored in the `transparency` array. {#tbl-transparency}
 
 # Performance
 
@@ -239,6 +252,8 @@ out = [
     r"\centering\footnotesize",
     r"\setlength{\tabcolsep}{6pt}",
     r"\renewcommand{\arraystretch}{1.05}",
+    r"\caption{ESG indicators extracted by the pipeline.}",
+    r"\label{tab:indicators}",
     rf"\begin{{tabular}}{{{tabular_spec}}}",
     r"\toprule",
     header,
@@ -262,8 +277,6 @@ for i, cat in enumerate(["environmental", "social", "governance"]):
 out += [
     r"\bottomrule",
     r"\end{tabular}",
-    r"\caption{ESG indicators extracted by the pipeline.}",
-    r"\label{tab:indicators}",
     r"\end{table}",
 ]
 
