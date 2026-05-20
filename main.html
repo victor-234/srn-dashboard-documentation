@@ -2,13 +2,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.6.40">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Sustainability Reporting Navigator">
+<meta name="dcterms.date" content="2026-05-20">
+<meta name="description" content="Technical documentation of the Transparency dimension and ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator’s ESG performance dataset.">
 
-<title>Whitepaper on the SRN’s AI extraction pipeline</title>
+<title>Documentation for the SRN Benchmarking Dashboard</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -20,294 +26,753 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="main_files/libs/clipboard/clipboard.min.js"></script>
-<script src="main_files/libs/quarto-html/quarto.js"></script>
+<script src="main_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="main_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="main_files/libs/quarto-html/popper.min.js"></script>
 <script src="main_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="main_files/libs/quarto-html/anchor.min.js"></script>
 <link href="main_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="main_files/libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="main_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="main_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="main_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="main_files/libs/bootstrap/bootstrap-973236bd072d72a04ee9cd82dcc9cb29.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="main_files/libs/bootstrap/bootstrap-efbb37e9afcc02144ebbc7afd12a776f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
-<body class="fullcontent">
+<body class="quarto-light">
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="main.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Whitepaper on the SRN’s AI extraction pipeline</h1>
+<h1 class="title">Documentation for the SRN Benchmarking Dashboard</h1>
 </div>
 
+<div>
+  <div class="description">
+    Technical documentation of the Transparency dimension and ESG indicator extraction pipeline underlying the Sustainability Reporting Navigator’s ESG performance dataset.
+  </div>
+</div>
 
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p><a href="https://srnav.com">Sustainability Reporting Navigator</a> </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">May 20, 2026</p>
+    </div>
+  </div>
   
+    <div>
+    <div class="quarto-title-meta-heading">Modified</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date-modified">May 20, 2026</p>
+    </div>
+  </div>
     
   </div>
   
+<div>
+  <div class="abstract">
+    <div class="block-title">Abstract</div>
+    <p>This whitepaper documents the automated extraction pipeline of the Transparency dimensions as well as the and environmental, social, and governance (ESG) indicatos of the Sustainability Reporting Navigator (SRN). The Transparency dimension pipeline captures textual characteristics such as length and readibility as well as environmental and social topic shares. The ESG indicator pipeline retrieves and extracts a predefined set of 25 ESG indicators from firms’ annual and sustainability reports using a hybrid retrieval strategy combining semantic similarity search and keyword matching, followed by structured LLM extraction. We describe the design choices, retrieval parameters, and data schema. For technical questions and licensing inquiries, please reach out via email at <a href="mailto:hello@srnav.com">hello@srnav.com</a>.</p>
+  </div>
+</div>
 
 
 </header>
 
 
-<section id="abstract" class="level2">
-<h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
+<section id="transparency" class="level1">
+<h1>Transparency</h1>
+<p>This section documents how the SRN extracts the <strong>Transparency</strong> dimensions from firms’ annual and sustainability reports. The transparency dimensions captured by the SRN dataset describe <strong>how</strong> firms report rather than <strong>what</strong> they report. To that end, we capture textual characteristics (e.g., length and readability) and environmental and social topic shares. Reports are first parsed with Docling <span class="citation" data-cites="docling2024">(<a href="#ref-docling2024" role="doc-biblioref">Deep Search Team 2024</a>)</span> and then processed with Python at the sentence level. The language model used to classify passages into environmental and social topics was originally developed for <span class="citation" data-cites="Donau2024-yc">Donau et al. (<a href="#ref-Donau2024-yc" role="doc-biblioref">2026</a>)</span>. We adopt their label set and decision thresholds without modification, and refer the reader to that paper for full methodological detail.</p>
+<p>In what follows we summarise the two transparency dimensions exposed through the dashboard: a set of report-level textual characteristics (Section <a href="#textual-characteristics">Textual characteristics</a>) and a sentence-level classifier that locates passages addressing environmental and social topics (Section <a href="#environmental-and-social-topics">Environmental and social topics</a>).</p>
+<section id="textual-characteristics" class="level2">
+<h2 class="anchored" data-anchor-id="textual-characteristics">Textual characteristics</h2>
+<p>For each (firm, year, report) we compute a set of report-level features describing the document’s overall structure and writing style. They are stored alongside the extracted ESG indicators and exposed in the API as a single row per report under the <code>transparency</code> field. The features fall into three groups:</p>
+<ul>
+<li><p><strong>Length and structure.</strong> Total word count (<code>total_words</code>), page count (<code>pages</code>), and the number of tables (<code>total_tables</code>). <code>image_ratio</code> is the share of pages that contain at least one image.</p></li>
+<li><p><strong>Readability.</strong> <code>reading_difficulty</code> is the mean Gunning Fog index computed at the sentence level and averaged over the document. Higher values indicate more complex prose. <code>tone</code> is a sentiment ratio <span class="math inline">\((w^{+} - w^{-})/(w^{+} + w^{-})\)</span>, where <span class="math inline">\(w^{+}\)</span> and <span class="math inline">\(w^{-}\)</span> are the counts of positive and negative words from the <span class="citation" data-cites="Loughran2011">Loughran and McDonald (<a href="#ref-Loughran2011" role="doc-biblioref">2011</a>)</span> financial-sentiment dictionary; the ratio is set to zero when both counts are zero. <code>numbers</code> is the density of numerical tokens, defined as total numeric tokens divided by total words.</p></li>
+</ul>
 </section>
-<section id="method" class="level2">
-<h2 class="anchored" data-anchor-id="method">Method</h2>
+<section id="environmental-and-social-topics" class="level2">
+<h2 class="anchored" data-anchor-id="environmental-and-social-topics">Environmental and social topics</h2>
+<p>We conduct the topic classification at the sentence level to capture the share of text devoted to different environmental and social topics. We tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model (ESRS Bert) trained in <span class="citation" data-cites="Donau2024-yc">Donau et al. (<a href="#ref-Donau2024-yc" role="doc-biblioref">2026</a>)</span>. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model’s confidence score, and the original page number.</p>
+<p>The classifier covers nine topic labels aligned with the topical ESRS standards: five environmental — <em>E1 Climate Change</em>, <em>E2 Pollution</em>, <em>E3 Water and Marine Resources</em>, <em>E4 Biodiversity and Ecosystems</em>, and <em>E5 Resource Use and Circular Economy</em> — and four social — <em>S1 Own Workforce</em>, <em>S2 Workers in the Value Chain</em>, <em>S3 Affected Communities</em>, and <em>S4 Consumers and End-Users</em>.</p>
+<p>For each topic, we report the share of sentences in the sustainability statement assigned to that label, aggregated across all sentences classified as ES-relevant by the model. A sentence is attributed to a topic when the model’s confidence score exceeds the decision threshold selected during validation.</p>
+<p>The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g., accuracy, precision, recall, and F1-score by topic will be reported in the final published version of <span class="citation" data-cites="Donau2024-yc">Donau et al. (<a href="#ref-Donau2024-yc" role="doc-biblioref">2026</a>)</span>. <a href="#tbl-transparency" class="quarto-xref">Table&nbsp;1</a> displays all transparency dimensions stored in the <code>transparency</code> array.</p>
+<div id="tbl-transparency" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-transparency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Report-level textual features stored in the transparency array.
+</figcaption>
+<div aria-describedby="tbl-transparency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 50%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Ref</th>
+<th>Description</th>
+<th>Unit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Total words</td>
+<td>Total number of words in the report</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>Pages</td>
+<td>Total page count as extracted from the PDF</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>E1 – E5</td>
+<td>Share of disclosure covering each environmental ESRS topic</td>
+<td>share (0–1)</td>
+</tr>
+<tr class="even">
+<td>S1 – S4</td>
+<td>Share of disclosure covering each social ESRS topic</td>
+<td>share (0–1)</td>
+</tr>
+<tr class="odd">
+<td>Reading difficulty</td>
+<td>Mean Gunning Fog index across pages; higher = more complex</td>
+<td>Fog index</td>
+</tr>
+<tr class="even">
+<td>Tone</td>
+<td><span class="citation" data-cites="Loughran2011">Loughran and McDonald (<a href="#ref-Loughran2011" role="doc-biblioref">2011</a>)</span> sentiment ratio <span class="math inline">\((w^{+}-w^{-})/(w^{+}+w^{-})\)</span></td>
+<td>ratio (−1 to 1)</td>
+</tr>
+<tr class="odd">
+<td>Numbers</td>
+<td>Number of numeric tokens detected in the report</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>Image ratio</td>
+<td>Share of pages containing at least one image</td>
+<td>share (0–1)</td>
+</tr>
+<tr class="odd">
+<td>Tables</td>
+<td>Number of tables detected in the report</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
 </section>
-<section id="data" class="level2">
-<h2 class="anchored" data-anchor-id="data">Data</h2>
+</section>
+<section id="performance" class="level1">
+<h1>Performance</h1>
+<p>This section documents how the SRN extracts the <strong>quantitative</strong> ESG indicators from firms’ annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section <a href="#data-points">Data points</a>) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section <a href="#pipeline-setup">Pipeline setup</a>), report its accuracy on a human-reviewed subset of the most recent public release (Section <a href="#pipeline-performance">Pipeline performance</a>), and finally describe how the resulting dataset is made available to researchers (Section <a href="#api-accessibility">API accessibility</a>).</p>
+<section id="data-points" class="level2">
+<h2 class="anchored" data-anchor-id="data-points">Data points</h2>
+<p>Our list of datapoints covers all ESG dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).</p>
+<p>All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release , both served by the SRN community page without authentication.</p>
+<div id="data-acquisition" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Fetch every public input that backs this document.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">All sources live on the SRN community release page and require no API</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">token. Already-downloaded files are reused so re-rendering stays fast.</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json, re, urllib.request</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>RELEASE      <span class="op">=</span> <span class="st">"v1.2"</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>BASE         <span class="op">=</span> <span class="ss">f"https://lab.srnav.com/p/main-esrs-kpi/</span><span class="sc">{</span>RELEASE<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>RELEASE_JSON <span class="op">=</span> Path(<span class="st">"release_v1_2.json"</span>)          <span class="co"># companies, fields, values</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>SNAPSHOT     <span class="op">=</span> Path(<span class="st">"performance_snapshot.json"</span>)  <span class="co"># per-indicator accuracy</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _http_get(url: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">bytes</span>:</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    req <span class="op">=</span> urllib.request.Request(url, headers<span class="op">=</span>{<span class="st">"User-Agent"</span>: <span class="st">"srn-whitepaper/1.0"</span>})</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> urllib.request.urlopen(req, timeout<span class="op">=</span><span class="dv">30</span>).read()</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _balanced(text: <span class="bu">str</span>, start: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return text[start..matching '}']. start must point at an opening '{'."""</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    depth, in_str, q, esc <span class="op">=</span> <span class="dv">0</span>, <span class="va">False</span>, <span class="va">None</span>, <span class="va">False</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(start, <span class="bu">len</span>(text)):</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        c <span class="op">=</span> text[i]</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> in_str:</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span>   esc:        esc <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> c <span class="op">==</span> <span class="st">"</span><span class="ch">\\</span><span class="st">"</span>:  esc <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> c <span class="op">==</span> q:     in_str <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span>   c <span class="kw">in</span> (<span class="st">'"'</span>, <span class="st">"'"</span>): in_str, q <span class="op">=</span> <span class="va">True</span>, c</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> c <span class="op">==</span> <span class="st">"{"</span>:         depth <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> c <span class="op">==</span> <span class="st">"}"</span>:</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>                depth <span class="op">-=</span> <span class="dv">1</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> depth <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> text[start: i <span class="op">+</span> <span class="dv">1</span>]</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"unbalanced braces"</span>)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="co"># 1) Release data (used as the source of truth for indicator metadata).</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> RELEASE_JSON.exists():</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    RELEASE_JSON.write_bytes(_http_get(<span class="ss">f"</span><span class="sc">{</span>BASE<span class="sc">}</span><span class="ss">/data.json"</span>))</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># 2) Performance snapshot. Embedded as a devalue-serialised JS object literal</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="co">#    in the release page; we walk balanced braces and quote bare keys.</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> SNAPSHOT.exists():</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    html   <span class="op">=</span> _http_get(BASE).decode(<span class="st">"utf-8"</span>)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>    anchor <span class="op">=</span> html.find(<span class="st">"performance:{"</span>)</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> anchor <span class="op">==</span> <span class="op">-</span><span class="dv">1</span>:</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"performance snapshot not found on release page"</span>)</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    js   <span class="op">=</span> _balanced(html, html.find(<span class="st">"{"</span>, anchor))</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r"</span><span class="kw">(</span><span class="pp">[{,]</span><span class="kw">)(</span><span class="pp">[A-Za-z_]</span><span class="dv">\w</span><span class="op">*</span><span class="kw">)</span><span class="vs">:"</span>, <span class="vs">r'</span><span class="ch">\1</span><span class="vs">"</span><span class="ch">\2</span><span class="vs">":'</span>, js)</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    SNAPSHOT.write_text(json.dumps(json.loads(text), indent<span class="op">=</span><span class="dv">2</span>))</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> p <span class="kw">in</span> (RELEASE_JSON, SNAPSHOT):</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'cached '</span> <span class="cf">if</span> <span class="va">True</span> <span class="cf">else</span> <span class="st">'fetched'</span><span class="sc">}{</span>p<span class="sc">}</span><span class="ss">  (</span><span class="sc">{</span>p<span class="sc">.</span>stat()<span class="sc">.</span>st_size<span class="sc">:,}</span><span class="ss"> bytes)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>cached release_v1_2.json  (829,548 bytes)
+cached performance_snapshot.json  (9,076 bytes)</code></pre>
+</div>
+</div>
+</section>
+<section id="data-point-definition-guide" class="level2">
+<h2 class="anchored" data-anchor-id="data-point-definition-guide">Data Point Definition Guide</h2>
+<section id="environmental" class="level3">
+<h3 class="anchored" data-anchor-id="environmental">Environmental</h3>
+<p><strong>Total energy consumption</strong> <em>(MWh)</em></p>
+<p>Report the undertaking’s total energy consumption from own operations in MWh. Capture one explicit total value only. Include energy from fossil, nuclear, and renewable sources if reported as part of total energy consumption. Do not use energy intensity, energy savings, production volumes, percentages, or segment-only values.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total energy consumption from fossil sources</strong> <em>(MWh)</em></p>
+<p>Extract the explicitly reported total energy consumption from fossil sources in MWh for the reporting year, relating to own operations. Record one absolute total value only. Include fossil energy from fuels and purchased fossil-based electricity, heat, steam, or cooling only if they are included in the reported total fossil energy consumption. Do not use total energy consumption, coal/oil/gas subcomponents instead of the total, energy intensity, energy savings, percentages, or energy production values. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total energy consumption from renewable sources</strong> <em>(MWh)</em></p>
+<p>Extract the explicitly reported total energy consumption from renewable sources in MWh for the reporting year, relating to own operations. Record one absolute total value only. Include renewable fuel consumption, purchased or acquired renewable electricity, heat, steam, or cooling, and self-generated non-fuel renewable energy only if they are included in the reported total renewable energy consumption. Do not use total energy consumption, renewable subcomponents instead of the total, energy intensity, energy savings, percentages, renewable energy production, or installed capacity values. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Scope 1 greenhouse gas emissions</strong> <em>(tCO<sub>2</sub>eq)</em></p>
+<p>The absolute value of Scope 1 direct emissions in the given year. Do not use a future target value or the emissions intensity.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Scope 2 greenhouse gas emissions (location-based)</strong> <em>(tCO<sub>2</sub>eq)</em></p>
+<p>The absolute value of location-based Scope 2 emissions in the given year. Do not use a future target value or the emissions intensity.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Scope 2 greenhouse gas emissions (market-based)</strong> <em>(tCO<sub>2</sub>eq)</em></p>
+<p>The absolute value of market-based Scope 2 emissions in the given year. Do not use a future target value or the emissions intensity.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total Scope 3 greenhouse gas emissions</strong> <em>(tCO<sub>2</sub>eq)</em></p>
+<p>The absolute value of total Scope 3 emissions, i.e., the sum of all Scope 3 categories in the given year. Do not use a future target value or the emissions intensity.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total emissions (location-based)</strong> <em>(tCO<sub>2</sub>eq)</em></p>
+<p>The sum of Scope 1, location-based Scope 2, and total Scope 3 emissions in the given year. Do not use a future target value or the emissions intensity.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total emissions (market-based)</strong> <em>(tCO<sub>2</sub>eq)</em></p>
+<p>The sum of Scope 1, market-based Scope 2, and total Scope 3 emissions in the given year. Do not use a future target value or the emissions intensity.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total water consumption</strong> <em>(m<sup>3</sup>)</em></p>
+<p>Extract the explicitly reported total water consumption from own operations in m<sup>3</sup> for the reporting year. Record one absolute total value only. Do not use water withdrawal, water discharge, water intensity, recycling or reuse volumes, percentages, targets, or segment-only values instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total use of land</strong> <em>(m<sup>2</sup>)</em></p>
+<p>Extract the explicitly reported total land use in m<sup>2</sup> for the reporting year, relating to own operations where disclosed as a biodiversity- or ecosystem-related land-use metric. Record one absolute total value only. Do not use site area, protected-area area, land-use change over time, land converted, floor area, operational footprint, percentages, or land-related values reported in other units instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total weight of waste generated</strong> <em>(t)</em></p>
+<p>Extract the explicitly reported total weight of waste generated from own operations in tonnes for the reporting year. Record one absolute total value only. Do not use waste diverted from disposal, waste directed to disposal, recycled waste, hazardous waste only, non-hazardous waste only, percentages, intensity metrics, or waste values reported for individual streams instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Total weight of non-recycled waste</strong> <em>(t)</em></p>
+<p>Extract the explicitly reported total weight of non-recycled waste from own operations in tonnes for the reporting year. Record one absolute total value only. Do not use the percentage of non-recycled waste, total waste generated, waste diverted from disposal, waste directed to disposal, recycled waste, hazardous waste only, non-hazardous waste only, or waste values reported for individual treatment types instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Share of non-recycled waste to total waste</strong> <em>(%)</em></p>
+<p>Extract the explicitly reported share of non-recycled waste relative to total waste from own operations for the reporting year, expressed as a percentage. Record one reported percentage value only. Do not use the total weight of non-recycled waste, total waste generated, recycled waste share, waste diverted from disposal, hazardous waste only, non-hazardous waste only, or percentages for individual waste streams or treatment types instead of the total share. If multiple values are reported, use the consolidated group-level figure for the current reporting year.</p>
+<p><em>Variants/Problems:</em> —</p>
+</section>
+<section id="governance" class="level3">
+<h3 class="anchored" data-anchor-id="governance">Governance</h3>
+<p><strong>Total number of confirmed incidents of corruption or bribery</strong></p>
+<p>Extract the explicitly reported total number of confirmed incidents of corruption or bribery during the reporting period. Record one absolute total value only. Include incidents involving actors in the value chain only where the undertaking or its own workers are directly involved. Do not use the number of convictions, legal cases, dismissals or disciplinary actions, terminated or non-renewed business partner contracts, or qualitative descriptions of incidents instead of the total number of confirmed incidents. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> —</p>
+</section>
+<section id="social" class="level3">
+<h3 class="anchored" data-anchor-id="social">Social</h3>
+<p><strong>Total number of employees</strong></p>
+<p>Extract the explicitly reported total number of employees in the undertaking’s own workforce for the reporting period. Record one absolute total value only. Do not use full-time equivalent (FTE) values, permanent employees only, temporary employees only, non-guaranteed hours employees only, employees by gender, employees by country, or numbers relating to workers who are not employees instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> Often there are different definitions of the total number of employees, especially between the financial and the sustainability report. We we find several one, we would choose the one reported in the sustainability report.</p>
+<p><strong>Total number of female employees</strong></p>
+<p>Extract the explicitly reported total number of female employees in the undertaking’s own workforce for the reporting period. Record one absolute total value only. Do not use the total number of employees, percentages or gender shares, female permanent employees only, female temporary employees only, female non-guaranteed hours employees only, or figures relating to workers who are not employees instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Share of employees aged 50 or older</strong> <em>(%)</em></p>
+<p>Extract the explicitly reported share of employees aged 50 or older in the undertaking’s own workforce for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the total number of employees aged 50 or older, the total number of employees, age-group counts without a reported percentage, percentages for other age groups, or figures relating to workers who are not employees instead of the share. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Rate of employee turnover</strong> <em>(%)</em></p>
+<p>Extract the explicitly reported rate of employee turnover in the undertaking’s own workforce for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the total number of employees who left the undertaking, the total number of employees, hiring rates, retention rates, percentages for specific employee groups only, or figures relating to workers who are not employees instead of the turnover rate. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Percentage of total employees covered by collective bargaining agreements</strong> <em>(%)</em></p>
+<p>Extract the explicitly reported percentage of the undertaking’s total employees covered by collective bargaining agreements for the reporting period. Record one reported percentage value only. Do not use the existence of collective bargaining agreements without a reported coverage percentage, country-level percentages only, region-level percentages only, percentages relating to non-employees, or figures relating to workers’ representatives instead of the total employee coverage percentage. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Share of women in top management</strong> <em>(%)</em></p>
+<p>Extract the explicitly reported share of women in top management for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the number of women in top management, the share of women in the total workforce, the share of women on the board, gender diversity metrics for management levels other than top management, or percentages for age groups instead of the share of women in top management. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> Different definitions of top management at firm-level.</p>
+<p><strong>Rate of recordable work-related accidents</strong> <em>(per million hours worked)</em></p>
+<p>Extract the rate of recordable work-related accidents defined as the number of cases divided by the number of total hours worked by people in its own workforce, multiplied by 1,000,000. This represents the number of cases per one million hours worked and roughly corresponds to the total hours worked by 500 full-time workers in one year.</p>
+<p><em>Variants/Problems:</em> —</p>
+<p><strong>Gender pay gap</strong> <em>(%)</em></p>
+<p>Extract the gender pay gap defined as the difference in average pay levels between female and male employees, expressed as a percentage of the average pay level of male employees.</p>
+<p><em>Variants/Problems:</em> Some companies report negative gender pay gap (i.e.&nbsp;women earn more than man). In this case we report negative values.</p>
+<p><strong>Annual total remuneration ratio</strong></p>
+<p>Extract the ratio of the highest-paid individual to the median annual total remuneration for all employees (excluding the highest-paid individual).</p>
+<p><em>Variants/Problems:</em> Different ways of reporting (e.g., 250:1, 250, 25000%). In SRN Lab we would report the remuneration ratio from the example as 250.</p>
+<p><strong>Number of severe human rights issues and incidents</strong></p>
+<p>Extract the explicitly reported number of severe human rights issues and incidents connected to the company’s upstream and downstream value chain during the reporting period. Record one absolute total value only. Do not use general human rights incidents not identified as severe, incidents involving the company’s own workforce only, qualitative descriptions of cases, legal proceedings, remediation actions, or policy statements instead of the total number of severe human rights issues and incidents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.</p>
+<p><em>Variants/Problems:</em> —</p>
+</section>
+</section>
+<section id="pipeline-setup" class="level2">
+<h2 class="anchored" data-anchor-id="pipeline-setup">Pipeline setup</h2>
+<p>Our extraction pipeline builds on the design described by <span class="citation" data-cites="forster2026">Forster et al. (<a href="#ref-forster2026" role="doc-biblioref">2026</a>)</span>. For each firm-year, we extract a predefined set of 25 ESG indicators from the firm’s annual report and sustainability report. Figure <span class="math inline">\(\ref{fig:pipeline}\)</span> summarises the pipeline end-to-end.</p>
+<p>Text, tables, and figures of the source documents are first parsed and then chunked — that is, split into smaller units — using Docling <span class="citation" data-cites="docling2024">(<a href="#ref-docling2024" role="doc-biblioref">Deep Search Team 2024</a>)</span>. To make chunks quickly retrievable, we embed each chunk with Mistral’s text embedding model, <code>mistral-embed-2312</code> <span class="citation" data-cites="mistralembed2023">(<a href="#ref-mistralembed2023" role="doc-biblioref">Mistral AI 2023</a>)</span>. The resulting numerical vectors are stored in a cosine-similarity index that serves as the backbone for retrieval.</p>
+<p>For each of the 25 indicators, retrieval combines two complementary signals in a single hybrid step. Mistral Large first turns the indicator definition into a natural-language search query, which is embedded with Mistral Embed and submitted to the pgvector index alongside a BM25 lexical query over the chunk text. The two ranked lists are merged via reciprocal rank fusion (RRF) with weights <span class="math inline">\(0.7\)</span> for the vector channel and <span class="math inline">\(0.3\)</span> for the lexical channel, and the top five chunks (subject to a cosine-similarity floor of <span class="math inline">\(0.70\)</span>) are returned. This hybrid formulation is motivated by the observation that purely semantic retrieval occasionally misses tables or boilerplate passages that use the exact regulatory term, while pure keyword matching ignores synonymous formulations.</p>
+<p>The retrieved chunks, together with a custom prompt and a structured output schema, are passed to the language model. The prompt specifies the indicator definition, the expected unit of measurement, and instructions for handling absent disclosures. The model returns the extracted value, its source page, a confidence score in <span class="math inline">\([0,1]\)</span>, and a short justification. Outputs are validated in-flight against a Zod schema; responses that violate the schema are discarded and logged rather than retried, to avoid propagating model errors downstream. If a response is well-formed but reports that the answer is present in the retrieved sources yet could not be extracted as a clean value, the query is reformulated by the model and retrieval is repeated, up to three times in total.</p>
+<p>The loop runs over all 25 indicators per firm-year in batches of five and results are written to a relational table with one row per indicator–firm–year triplet. Each record retains the source-document identifier and page number, enabling manual verification against the original filing.</p>
+</section>
+<section id="pipeline-performance" class="level2">
+<h2 class="anchored" data-anchor-id="pipeline-performance">Pipeline performance</h2>
+<p>To assess extraction quality we evaluate every AI-extracted value against a human-verified ground truth. The evaluation set used here is the human-reviewed subset of public release of the project, covering 4,608 firm–indicator–year pairs for Euro Stoxx 50 and DAX 40 companies in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI’s output, replaced it with the correct number, or marked the indicator as not disclosed. Outcomes are partitioned into five mutually exclusive classes: (the AI value matches the reviewer’s value, including agreement on non-disclosure); (both the AI and the reviewer extracted a number but the values disagree); (the AI returned but the reviewer found a value); (the AI returned a value but the reviewer marked the indicator as not disclosed); and (the AI’s structured output failed Zod validation). <a href="#fig-performance" class="quarto-xref">Figure&nbsp;1</a> reports the per-indicator breakdown of these outcomes, sorted by accuracy.</p>
+<p>Aggregated across all 25 indicators, the pipeline reaches an accuracy of <span class="math inline">\(72\%\)</span> on the reviewed subset (3,322 of 4,608 pairs). Breaking this down by category, governance (one indicator) and social (<span class="math inline">\(75.0\%\)</span>) lie slightly above this mean while environmental indicators (<span class="math inline">\(69.8\%\)</span>) lie slightly below it, driven primarily by the harder Scope 1–3 greenhouse-gas emissions. Across error modes, extractions (619 pairs, <span class="math inline">\(13\%\)</span> of the reviewed set) are the largest single failure class, followed by (443 pairs, <span class="math inline">\(10\%\)</span>); (124, <span class="math inline">\(3\%\)</span>) and (100, <span class="math inline">\(2\%\)</span>) are comparatively rare.</p>
+<div id="cell-fig-performance" class="cell" data-fig-height="7.8" data-fig-width="6.5" data-execution_count="3">
+<div class="cell-output cell-output-display">
+<div id="fig-performance" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-pos="p">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-performance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="main_files/figure-html/fig-performance-output-1.png" data-fig-pos="p" width="607" height="753" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-performance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Per-indicator extraction accuracy on the human-reviewed subset of public release v1.2 (4,608 firm–indicator–year pairs covering Euro Stoxx 50 and DAX 40 companies in reporting years 2024–2025). Bars are sorted by accuracy. Each stacked bar shows the composition of the reviewed pairs into five outcomes; the rightmost annotation reports the number of reviewed pairs <span class="math inline">\(n\)</span> and the per-indicator accuracy. The overall accuracy of the pipeline on this set is 72%.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3), where reports frequently use bespoke wording, hide the value in a table footnote, or report partial sub-figures that confuse the retrieval step. The same indicators also produce many extractions because firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the model occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above <span class="math inline">\(84\%\)</span>; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is the lone outlier on the low end (<span class="math inline">\(46\%\)</span>): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.</p>
 </section>
 <section id="api-accessibility" class="level2">
 <h2 class="anchored" data-anchor-id="api-accessibility">API accessibility</h2>
+<p>The extracted dataset is exposed through a small, versioned REST API at . Each <em>release</em> is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g.&nbsp;) rather than to , so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at , which serves a Swagger UI generated from the OpenAPI specification at .</p>
+<p>Access is gated by a personal API token, requested at and passed in the standard header. Tokens are scoped to the issuing account and can be rotated or revoked at any time; we ask consumers to keep them out of version control and out of figure source files. The two endpoints needed for most research workflows are:</p>
+<p>Each row of a release identifies a single firm–indicator–year observation and carries the published value together with the firm’s identifier, ISIN, country, sector, industry, and stock index membership; the indicator’s slug, name, category, unit, and data type; the year; a flag ( for reviewer-verified values, for AI-only extractions awaiting review); the source document identifier; and a page reference for traceability against the original filing.</p>
+<p>A minimal request fetches the latest release:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-H</span> <span class="st">"Authorization: Bearer </span><span class="va">$SRN_TOKEN</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"https://api.srnav.com/projects/main-esrs-kpi/releases/latest"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The same payload is one line away from a tidy data frame in Python — the following snippet pins the request to a specific release and filters to the GHG indicators for two firms:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, requests, pandas <span class="im">as</span> pd</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>VERSION <span class="op">=</span> <span class="st">"v1.2"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>headers <span class="op">=</span> {<span class="st">"Authorization"</span>: <span class="ss">f"Bearer </span><span class="sc">{</span>os<span class="sc">.</span>environ[<span class="st">'SRN_TOKEN'</span>]<span class="sc">}</span><span class="ss">"</span>}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>resp <span class="op">=</span> requests.get(</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"https://api.srnav.com/projects/main-esrs-kpi/releases/</span><span class="sc">{</span>VERSION<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    headers<span class="op">=</span>headers, timeout<span class="op">=</span><span class="dv">30</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>resp.raise_for_status()</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>release <span class="op">=</span> resp.json()</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame(release[<span class="st">"values"</span>])</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"value"</span>] <span class="op">=</span> pd.to_numeric(df[<span class="st">"value"</span>], errors<span class="op">=</span><span class="st">"coerce"</span>)  <span class="co"># NOT_FOUND -&gt; NaN</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>ghg <span class="op">=</span> df[</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"field_slug"</span>].<span class="bu">str</span>.startswith(<span class="st">"ghg_"</span>) <span class="op">&amp;</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"isin"</span>].isin([<span class="st">"DE000A1EWWW0"</span>, <span class="st">"DE0007164600"</span>])  <span class="co"># Adidas, SAP</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(ghg[[<span class="st">"company_name"</span>, <span class="st">"year"</span>, <span class="st">"field_slug"</span>, <span class="st">"value"</span>, <span class="st">"unit"</span>, <span class="st">"source"</span>]])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The CSV variant is most convenient in R, where it can be read in a single call:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>token   <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">"SRN_TOKEN"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>version <span class="ot">&lt;-</span> <span class="st">"v1.2"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(<span class="st">"https://api.srnav.com/projects/main-esrs-kpi/releases/"</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>         version, <span class="st">".csv"</span>),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">col_types =</span> <span class="fu">cols</span>(<span class="at">.default =</span> <span class="fu">col_character</span>(), <span class="at">value =</span> <span class="fu">col_double</span>()),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">na        =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA"</span>, <span class="st">"NOT_FOUND"</span>),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">guess_max =</span> <span class="fl">1e5</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># readr passes header arguments via `httr::add_headers` when the URL is fetched</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># by an internal call to httr; for explicit auth use the `httr2` recipe below.</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For programmatic discovery of the most recent published release and for any workflow that requires per-request control (e.g.&nbsp;rate-limit handling or audit logging), composes cleanly with the <code>releases</code> index:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(httr2)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>req <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="st">"https://api.srnav.com/projects/main-esrs-kpi/releases"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req_auth_bearer_token</span>(<span class="fu">Sys.getenv</span>(<span class="st">"SRN_TOKEN"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req_user_agent</span>(<span class="st">"srn-research/0.1"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>releases <span class="ot">&lt;-</span> <span class="fu">resp_body_json</span>(<span class="fu">req_perform</span>(req))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>latest   <span class="ot">&lt;-</span> <span class="fu">Filter</span>(\(r) <span class="fu">is.null</span>(r<span class="sc">$</span>retracted_at), releases)[[<span class="dv">1</span>]]<span class="sc">$</span>version</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Pinned to "</span>, latest)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>We encourage users to cite the dataset by its release version (e.g., <em>Sustainability Reporting Navigator, Main ESRS KPI dataset, release v1.2, published 2026-05-14</em>) and, where possible, to record the release’s timestamp in supplementary materials so that subsequent retractions or revisions can be detected. Requests, feature suggestions, and bug reports are welcome by email at .</p>
+<section id="references" class="level3">
+<h3 class="anchored" data-anchor-id="references">References</h3>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-docling2024" class="csl-entry" role="listitem">
+Deep Search Team. 2024. <em>Docling Technical Report</em>. arXiv:2408.09869. Version 1.0.0. IBM Research. <a href="https://doi.org/10.48550/arXiv.2408.09869">https://doi.org/10.48550/arXiv.2408.09869</a>.
+</div>
+<div id="ref-Donau2024-yc" class="csl-entry" role="listitem">
+Donau, Charlotte-Louisa, Katharina Hombach, Inga Elise Meringdal, Maximilian A Müller, Thorsten Sellhorn, and Victor Wagner. 2026. <span>“Targeting Transparency: Early Evidence on Mandatory Adoption of European Sustainability Reporting Standards.”</span> Unpublished manuscript.
+</div>
+<div id="ref-forster2026" class="csl-entry" role="listitem">
+Forster, Kerstin, Lucas Keil, Victor Wagner, Maximilian A Müller, Thorsten Sellhorn, and Stefan Feuerriegel. 2026. <span>“Assessing Corporate Sustainability with Large Language Models: Evidence from Europe.”</span> <a href="https://ssrn.com/abstract=5361703">https://ssrn.com/abstract=5361703</a>.
+</div>
+<div id="ref-Loughran2011" class="csl-entry" role="listitem">
+Loughran, Tim, and Bill McDonald. 2011. <span>“When Is a Liability Not a Liability? Textual Analysis, Dictionaries, and 10-Ks.”</span> <em>The Journal of Finance</em> 66 (1): 35–65. <a href="https://doi.org/10.1111/j.1540-6261.2010.01625.x">https://doi.org/10.1111/j.1540-6261.2010.01625.x</a>.
+</div>
+<div id="ref-mistralembed2023" class="csl-entry" role="listitem">
+Mistral AI. 2023. <em>Mistral <span>Embed</span> (<code>mistral-embed-2312</code>) – Model Card</em>. <a href="https://docs.mistral.ai/models/model-cards/mistral-embed-23-12" class="uri">Https://docs.mistral.ai/models/model-cards/mistral-embed-23-12</a>.
+</div>
+</div>
+</section>
+</section>
 </section>
 
 </main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
-window.document.addEventListener("DOMContentLoaded", function (event) {
-  const toggleBodyColorMode = (bsSheetEl) => {
-    const mode = bsSheetEl.getAttribute("data-mode");
-    const bodyEl = window.document.querySelector("body");
-    if (mode === "dark") {
-      bodyEl.classList.add("quarto-dark");
-      bodyEl.classList.remove("quarto-light");
-    } else {
-      bodyEl.classList.add("quarto-light");
-      bodyEl.classList.remove("quarto-dark");
-    }
-  }
-  const toggleBodyColorPrimary = () => {
-    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
-    if (bsSheetEl) {
-      toggleBodyColorMode(bsSheetEl);
-    }
-  }
-  toggleBodyColorPrimary();  
-  const icon = "";
-  const anchorJS = new window.AnchorJS();
-  anchorJS.options = {
-    placement: 'right',
-    icon: icon
-  };
-  anchorJS.add('.anchored');
-  const isCodeAnnotation = (el) => {
-    for (const clz of el.classList) {
-      if (clz.startsWith('code-annotation-')) {                     
-        return true;
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
       }
+      return false;
     }
-    return false;
-  }
-  const onCopySuccess = function(e) {
-    // button target
-    const button = e.trigger;
-    // don't keep focus
-    button.blur();
-    // flash "checked"
-    button.classList.add('code-copy-button-checked');
-    var currentTitle = button.getAttribute("title");
-    button.setAttribute("title", "Copied!");
-    let tooltip;
-    if (window.bootstrap) {
-      button.setAttribute("data-bs-toggle", "tooltip");
-      button.setAttribute("data-bs-placement", "left");
-      button.setAttribute("data-bs-title", "Copied!");
-      tooltip = new bootstrap.Tooltip(button, 
-        { trigger: "manual", 
-          customClass: "code-copy-button-tooltip",
-          offset: [0, -8]});
-      tooltip.show();    
-    }
-    setTimeout(function() {
-      if (tooltip) {
-        tooltip.hide();
-        button.removeAttribute("data-bs-title");
-        button.removeAttribute("data-bs-toggle");
-        button.removeAttribute("data-bs-placement");
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
       }
-      button.setAttribute("title", currentTitle);
-      button.classList.remove('code-copy-button-checked');
-    }, 1000);
-    // clear code selection
-    e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
       for (const childEl of codeEl.children) {
         if (isCodeAnnotation(childEl)) {
           childEl.remove();
         }
       }
       return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
-  });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
     });
-    clipboardModal.on('success', onCopySuccess);
-  }
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
     }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
-    }
-  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-    const config = {
-      allowHTML: true,
-      maxWidth: 500,
-      delay: 100,
-      arrow: false,
-      appendTo: function(el) {
-          return el.parentElement;
-      },
-      interactive: true,
-      interactiveBorder: 10,
-      theme: 'quarto',
-      placement: 'bottom-start',
-    };
-    if (contentFn) {
-      config.content = contentFn;
-    }
-    if (onTriggerFn) {
-      config.onTrigger = onTriggerFn;
-    }
-    if (onUntriggerFn) {
-      config.onUntrigger = onUntriggerFn;
-    }
-    window.tippy(el, config); 
-  }
-  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-  for (var i=0; i<noterefs.length; i++) {
-    const ref = noterefs[i];
-    tippyHover(ref, function() {
-      // use id or data attribute instead here
-      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-      try { href = new URL(href).hash; } catch {}
-      const id = href.replace(/^#\/?/, "");
-      const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
-    });
-  }
-  const xrefs = window.document.querySelectorAll('a.quarto-xref');
-  const processXRef = (id, note) => {
-    // Strip column container classes
-    const stripColumnClz = (el) => {
-      el.classList.remove("page-full", "page-columns");
-      if (el.children) {
-        for (const child of el.children) {
-          stripColumnClz(child);
-        }
-      }
-    }
-    stripColumnClz(note)
-    if (id === null || id.startsWith('sec-')) {
-      // Special case sections, only their first couple elements
-      const container = document.createElement("div");
-      if (note.children && note.children.length > 2) {
-        container.appendChild(note.children[0].cloneNode(true));
-        for (let i = 1; i < note.children.length; i++) {
-          const child = note.children[i];
-          if (child.tagName === "P" && child.innerText === "") {
-            continue;
-          } else {
-            container.appendChild(child.cloneNode(true));
-            break;
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
           }
         }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(container);
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
         }
-        return container.innerHTML
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
       } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
         if (window.Quarto?.typesetMath) {
           window.Quarto.typesetMath(note);
         }
-        return note.innerHTML;
-      }
-    } else {
-      // Remove any anchor links if they are present
-      const anchorLink = note.querySelector('a.anchorjs-link');
-      if (anchorLink) {
-        anchorLink.remove();
-      }
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(note);
-      }
-      if (note.classList.contains("callout")) {
-        return note.outerHTML;
-      } else {
-        return note.innerHTML;
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
       }
     }
-  }
-  for (var i=0; i<xrefs.length; i++) {
-    const xref = xrefs[i];
-    tippyHover(xref, undefined, function(instance) {
-      instance.disable();
-      let url = xref.getAttribute('href');
-      let hash = undefined; 
-      if (url.startsWith('#')) {
-        hash = url;
-      } else {
-        try { hash = new URL(url).hash; } catch {}
-      }
-      if (hash) {
-        const id = hash.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note !== null) {
-          try {
-            const html = processXRef(id, note.cloneNode(true));
-            instance.setContent(html);
-          } finally {
-            instance.enable();
-            instance.show();
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
           }
         } else {
-          // See if we can fetch this
-          fetch(url.split('#')[0])
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
           .then(res => res.text())
           .then(html => {
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.getElementById(id);
+            const note = htmlDoc.querySelector('main.content');
             if (note !== null) {
-              const html = processXRef(id, note);
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
               instance.setContent(html);
             } 
           }).finally(() => {
@@ -315,185 +780,161 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             instance.show();
           });
         }
-      } else {
-        // See if we can fetch a full url (with no hash to target)
-        // This is a special case and we should probably do some content thinning / targeting
-        fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const htmlDoc = parser.parseFromString(html, "text/html");
-          const note = htmlDoc.querySelector('main.content');
-          if (note !== null) {
-            // This should only happen for chapter cross references
-            // (since there is no id in the URL)
-            // remove the first header
-            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-              note.children[0].remove();
-            }
-            const html = processXRef(null, note);
-            instance.setContent(html);
-          } 
-        }).finally(() => {
-          instance.enable();
-          instance.show();
-        });
-      }
-    }, function(instance) {
-    });
-  }
-      let selectedAnnoteEl;
-      const selectorForAnnotation = ( cell, annotation) => {
-        let cellAttr = 'data-code-cell="' + cell + '"';
-        let lineAttr = 'data-code-annotation="' +  annotation + '"';
-        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-        return selector;
-      }
-      const selectCodeLines = (annoteEl) => {
-        const doc = window.document;
-        const targetCell = annoteEl.getAttribute("data-target-cell");
-        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-        const lineIds = lines.map((line) => {
-          return targetCell + "-" + line;
-        })
-        let top = null;
-        let height = null;
-        let parent = null;
-        if (lineIds.length > 0) {
-            //compute the position of the single el (top and bottom and make a div)
-            const el = window.document.getElementById(lineIds[0]);
-            top = el.offsetTop;
-            height = el.offsetHeight;
-            parent = el.parentElement.parentElement;
-          if (lineIds.length > 1) {
-            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-            height = bottom - top;
-          }
-          if (top !== null && height !== null && parent !== null) {
-            // cook up a div (if necessary) and position it 
-            let div = window.document.getElementById("code-annotation-line-highlight");
-            if (div === null) {
-              div = window.document.createElement("div");
-              div.setAttribute("id", "code-annotation-line-highlight");
-              div.style.position = 'absolute';
-              parent.appendChild(div);
-            }
-            div.style.top = top - 2 + "px";
-            div.style.height = height + 4 + "px";
-            div.style.left = 0;
-            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-            if (gutterDiv === null) {
-              gutterDiv = window.document.createElement("div");
-              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-              gutterDiv.style.position = 'absolute';
-              const codeCell = window.document.getElementById(targetCell);
-              const gutter = codeCell.querySelector('.code-annotation-gutter');
-              gutter.appendChild(gutterDiv);
-            }
-            gutterDiv.style.top = top - 2 + "px";
-            gutterDiv.style.height = height + 4 + "px";
-          }
-          selectedAnnoteEl = annoteEl;
-        }
-      };
-      const unselectCodeLines = () => {
-        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-        elementsIds.forEach((elId) => {
-          const div = window.document.getElementById(elId);
-          if (div) {
-            div.remove();
-          }
-        });
-        selectedAnnoteEl = undefined;
-      };
-        // Handle positioning of the toggle
-    window.addEventListener(
-      "resize",
-      throttle(() => {
-        elRect = undefined;
-        if (selectedAnnoteEl) {
-          selectCodeLines(selectedAnnoteEl);
-        }
-      }, 10)
-    );
-    function throttle(fn, ms) {
-    let throttle = false;
-    let timer;
-      return (...args) => {
-        if(!throttle) { // first call gets through
-            fn.apply(this, args);
-            throttle = true;
-        } else { // all the others get throttled
-            if(timer) clearTimeout(timer); // cancel #2
-            timer = setTimeout(() => {
-              fn.apply(this, args);
-              timer = throttle = false;
-            }, ms);
-        }
-      };
-    }
-      // Attach click handler to the DT
-      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-      for (const annoteDlNode of annoteDls) {
-        annoteDlNode.addEventListener('click', (event) => {
-          const clickedEl = event.target;
-          if (clickedEl !== selectedAnnoteEl) {
-            unselectCodeLines();
-            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-            if (activeEl) {
-              activeEl.classList.remove('code-annotation-active');
-            }
-            selectCodeLines(clickedEl);
-            clickedEl.classList.add('code-annotation-active');
-          } else {
-            // Unselect the line
-            unselectCodeLines();
-            clickedEl.classList.remove('code-annotation-active');
-          }
-        });
-      }
-  const findCites = (el) => {
-    const parentEl = el.parentElement;
-    if (parentEl) {
-      const cites = parentEl.dataset.cites;
-      if (cites) {
-        return {
-          el,
-          cites: cites.split(' ')
-        };
-      } else {
-        return findCites(el.parentElement)
-      }
-    } else {
-      return undefined;
-    }
-  };
-  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-  for (var i=0; i<bibliorefs.length; i++) {
-    const ref = bibliorefs[i];
-    const citeInfo = findCites(ref);
-    if (citeInfo) {
-      tippyHover(citeInfo.el, function() {
-        var popup = window.document.createElement('div');
-        citeInfo.cites.forEach(function(cite) {
-          var citeDiv = window.document.createElement('div');
-          citeDiv.classList.add('hanging-indent');
-          citeDiv.classList.add('csl-entry');
-          var biblioDiv = window.document.getElementById('ref-' + cite);
-          if (biblioDiv) {
-            citeDiv.innerHTML = biblioDiv.innerHTML;
-          }
-          popup.appendChild(citeDiv);
-        });
-        return popup.innerHTML;
+      }, function(instance) {
       });
     }
-  }
-});
-</script>
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
 </div> <!-- /content -->
 
 
