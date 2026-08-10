@@ -12,9 +12,12 @@ format:
     include-in-header:
       text: |
         \renewcommand{\familydefault}{\sfdefault}
+        \usepackage{multicol}
+        \usepackage{float}
+        \usepackage{fvextra}
+        \fvset{breaklines=true, breakanywhere=true}
         \usepackage{tikz}
         \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
-
         \definecolor{clrPurple50}{HTML}{EEEDFE}
         \definecolor{clrPurple600}{HTML}{534AB7}
         \definecolor{clrPurple800}{HTML}{3C3489}
@@ -74,8 +77,10 @@ format:
         }
     toc: true
     toc-depth: 3
-    number-sections: false
+    number-sections: true
+    number-depth: 3
     colorlinks: true
+    code-overflow: wrap
     geometry:
       - margin=2.5cm
     fontsize: 11pt
@@ -84,19 +89,46 @@ bibliography: references.bib
 citeproc: true
 link-citations: true
 abstract: |
-  This whitepaper documents the automated extraction pipeline of the Transparency dimensions as well as the and environmental, social, and governance (ESG) indicatos of the Sustainability Reporting Navigator (SRN). The Transparency dimension pipeline captures textual characteristics such as length and readibility as well as environmental and social topic shares. The ESG indicator pipeline retrieves and extracts a predefined set of 25 ESG indicators from firms' annual and
-  sustainability reports using a hybrid retrieval strategy combining semantic
-  similarity search and keyword matching, followed by structured LLM extraction.
-  We describe the design choices, retrieval parameters, and data schema. For technical questions and licensing inquiries, please reach out via email at [hello@srnav.com](mailto:hello@srnav.com).
+  This whitepaper documents the automated extraction pipeline of the Sustainability Reporting Navigator (SRN). The SRN
+  extracts two dimensions, a Transparency dimension and an environmental, social and governance (ESG) dimension. The
+  Transparency dimension captures textual characteristics such as length and readibility as well as
+  environmental and social topic shares. The ESG dimension retrieves and extracts predefined sets of ESG
+  indicators from firms' annual and sustainability reports using a retrieval-augmented generation (RAG)-based approach. 
+  We describe the design choices, retrieval parameters, and data schema. For technical questions and licensing
+  inquiries, please reach out via email at [hello@srnav.com](mailto:hello@srnav.com).
 ---
 
-# Transparency
+```{=latex}
+\clearpage
+\begin{multicols}{2}
+```
 
-This section documents how the SRN extracts the **Transparency** dimensions from firms' annual and sustainability reports. The transparency dimensions captured by the SRN dataset describe **how** firms report rather than **what** they report. To that end, we capture textual characteristics (e.g., length and readability) and environmental and social topic shares. Reports are first parsed with Docling [@docling2024] and then processed with Python at the sentence level. The language model used to classify passages into environmental and social topics was originally developed for @Donau2024-yc. We adopt their label set and decision thresholds without modification, and refer the reader to that paper for full methodological detail.
+# Introduction
+
+The Sustainability Reporting Navigator (SRN) provides structured, machine-readable datasets on corporate sustainability
+reporting, built by automatically processing firms' annual and sustainability reports. The underlying pipeline addresses
+two complementary questions: how firms report, and what they report. The first is captured by a set of transparency
+dimensions: textual characteristics such as length, readability, and tone, together with the share of disclosure devoted
+to environmental and social topics as defined by the European Sustainability Reporting Standards (ESRS). The second is
+captured by predefined set of data points, retrieved and extracted from the source documents using a artifical
+intelligence pipeline.
+
+This document provides the technical documentation. It is intended for researchers and practitioners who wish to understand how the data was produced, assess its reliability, and use it correctly in downstream analysis.
+
+# Methodology
+This chapter describes the methodology underlying the SRN's extraction pipeline. We first document how the SRN extracts the **Transparency** dimensions from firms' annual and sustainability reports (Section [Transparency]), then describe how the SRN extracts a predefined set of **quantitative ESG indicators** (Section [Extraction Pipeline]).
+
+## Transparency
+
+The transparency dimensions captured by the SRN dataset describe **how** firms report. To that end, we capture
+textual characteristics (e.g., length and readability) and environmental and social topic shares. The corporate reports are first
+parsed with Docling [@docling2024] and then processed with Python at the sentence level. The language model used to
+classify passages into environmental and social topics was originally developed for @Donau2024-yc. We adopt their label
+set and decision thresholds without modification, and refer the reader to that paper for full methodological detail.
 
 In what follows we summarise the two transparency dimensions exposed through the dashboard: a set of report-level textual characteristics (Section [Textual characteristics]) and a sentence-level classifier that locates passages addressing environmental and social topics (Section [Environmental and social topics]).
 
-## Textual characteristics
+### Textual characteristics
 
 For each (firm, year, report) we compute a set of report-level features describing the document's overall structure and writing style. They are stored alongside the extracted ESG indicators and exposed in the API as a single row per report under the `transparency` field. The features fall into three groups:
 
@@ -105,7 +137,7 @@ For each (firm, year, report) we compute a set of report-level features describi
 - **Readability.** `reading_difficulty` is the mean Gunning Fog index computed at the sentence level and averaged over the document. Higher values indicate more complex prose. `tone` is a sentiment ratio $(w^{+} - w^{-})/(w^{+} + w^{-})$, where $w^{+}$ and $w^{-}$ are the counts of positive and negative words from the @Loughran2011 financial-sentiment dictionary; the ratio is set to zero when both counts are zero. `numbers` is the density of numerical tokens, defined as total numeric tokens divided by total words.
 
 
-## Environmental and social topics
+### Environmental and social topics
 
 We conduct the topic classification at the sentence level to capture the share of text devoted to different environmental and social topics. 
 We tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model (ESRS Bert) trained in @Donau2024-yc. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model's confidence score, and the original page number.
@@ -114,57 +146,84 @@ The classifier covers nine topic labels aligned with the topical ESRS standards:
 
 For each topic, we report the share of sentences in the sustainability statement assigned to that label, aggregated across all sentences classified as ES-relevant by the model. A sentence is attributed to a topic when the model's confidence score exceeds the decision threshold selected during validation.
 
-The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc. @tbl-transparency displays all transparency dimensions stored in the `transparency` array.
+The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc. `\hyperref[tab:transparency]{Table~\ref{tab:transparency}}`{=latex} displays all transparency dimensions stored in the `transparency` array.
 
-| Ref | Description | Unit |
-|--|----|--|
-| Total words | Total number of words in the report | — |
-| Pages | Total page count as extracted from the PDF | — |
-| E1 – E5 | Share of disclosure covering each environmental ESRS topic | share (0–1) |
-| S1 – S4 | Share of disclosure covering each social ESRS topic | share (0–1) |
-| Reading difficulty | Mean Gunning Fog index across pages; higher = more complex | Fog index |
-| Tone | @Loughran2011 sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ | ratio (−1 to 1) |
-| Numbers | Number of numeric tokens detected in the report | — |
-| Image ratio | Share of pages containing at least one image | share (0–1) |
-| Tables | Number of tables detected in the report| — |
+```{=latex}
+\end{multicols}
 
-: Report-level textual features stored in the transparency array. {#tbl-transparency}
+\begin{table}[h]
+\centering\footnotesize
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.05}
+\caption{Report-level textual features stored in the transparency array.}
+\label{tab:transparency}
+\begin{tabular}{@{}l l l@{}}
+\toprule
+\textbf{Ref} & \textbf{Description} & \textbf{Unit} \\
+\midrule
+Total words & Total number of words in the report & --- \\
+Pages & Total page count as extracted from the PDF & --- \\
+E1 -- E5 & Share of disclosure covering each environmental ESRS topic & share (0--1) \\
+S1 -- S4 & Share of disclosure covering each social ESRS topic & share (0--1) \\
+Reading difficulty & Mean Gunning Fog index across pages; higher = more complex & Fog index \\
+Tone & Sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ (Loughran and McDonald, 2011) & ratio ($-1$ to $1$) \\
+Numbers & Number of numeric tokens detected in the report & --- \\
+Image ratio & Share of pages containing at least one image & share (0--1) \\
+Tables & Number of tables detected in the report & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-# Performance
+\begin{multicols}{2}
+```
 
-This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data points]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]), and finally describe how the resulting dataset is made available to researchers (Section [API accessibility]).
+## Extraction Pipeline
+This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data Point Packages]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]).
 
-## Data points
+### Data Point Packages
+The SRN defines sets of data points that are extracted from firms' annual and sustainability reports. Each datapoint is defined by a name, a unit of measurement, and a precise definition that specifies what to extract and what to ignore. 
 
-Our list of datapoints covers all ESG dimensions and is rooted in the European Sustainability Reporting Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).
+All inputs underlying the figures and tables of this document are publicly available. Refer to the Chapter [Working with
+the Data] for details on how to access the data.
 
-All inputs underlying the figures and tables of this document are publicly available and downloaded at render time; the snippet below pulls the indicator schema and the per-indicator performance snapshot for release \texttt{v1.2}, both served by the SRN community page without authentication.
+\columnbreak
+
+#### Main ESRS KPI dataset
+The *Main ESRS KPI dataset* covers all three ESG dimensions and is rooted in the European Sustainability Reporting
+Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).
+`\hyperref[tab:indicators]{Table~\ref{tab:indicators}}`{=latex} shows the datapoints currently included in the *Main
+ESRS KPI dataset*. The full definitions are provided in the Section [Data Point Package Definition Guide] in the Appendix.
+
+```{=latex}
+\end{multicols}
+```
 
 ```{python}
-#| label: data-acquisition
-#| echo: true
-#| eval: true
-
-"""Fetch every public input that backs this document.
-
-All sources live on the SRN community release page and require no API
-token. Already-downloaded files are reused so re-rendering stays fast.
-"""
+#| label: data-acquisition-setup
+#| echo: false
+#| output: false
 
 import json, re, urllib.request
 from pathlib import Path
 
-RELEASE      = "v1.2"
+# === Choose the release version here. ===
+
+RELEASE      = "v2.4"
+
+# ========================================
+
 BASE         = f"https://lab.srnav.com/p/main-esrs-kpi/{RELEASE}"
-RELEASE_JSON = Path("release_v1_2.json")          # companies, fields, values
-SNAPSHOT     = Path("performance_snapshot.json")  # per-indicator accuracy
+RELEASE_JSON = Path(f"release_{RELEASE.replace('.', '_')}.json")
+SNAPSHOT     = Path(f"performance_snapshot_{RELEASE.replace('.', '_')}.json")
+
+# Datapoints added to the package that are out of scope for this whitepaper.
+EXCLUDED_FIELD_SLUGS = {"revenues", "currency"}
 
 def _http_get(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": "srn-whitepaper/1.0"})
     return urllib.request.urlopen(req, timeout=30).read()
 
 def _balanced(text: str, start: int) -> str:
-    """Return text[start..matching '}']. start must point at an opening '{'."""
     depth, in_str, q, esc = 0, False, None, False
     for i in range(start, len(text)):
         c = text[i]
@@ -181,12 +240,9 @@ def _balanced(text: str, start: int) -> str:
                     return text[start: i + 1]
     raise RuntimeError("unbalanced braces")
 
-# 1) Release data (used as the source of truth for indicator metadata).
 if not RELEASE_JSON.exists():
     RELEASE_JSON.write_bytes(_http_get(f"{BASE}/data.json"))
 
-# 2) Performance snapshot. Embedded as a devalue-serialised JS object literal
-#    in the release page; we walk balanced braces and quote bare keys.
 if not SNAPSHOT.exists():
     html   = _http_get(BASE).decode("utf-8")
     anchor = html.find("performance:{")
@@ -194,10 +250,75 @@ if not SNAPSHOT.exists():
         raise RuntimeError("performance snapshot not found on release page")
     js   = _balanced(html, html.find("{", anchor))
     text = re.sub(r"([{,])([A-Za-z_]\w*):", r'\1"\2":', js)
-    SNAPSHOT.write_text(json.dumps(json.loads(text), indent=2))
+    SNAPSHOT.write_text(json.dumps(json.loads(text), indent=2), encoding="utf-8")
+```
 
-for p in (RELEASE_JSON, SNAPSHOT):
-    print(f"{'cached ' if True else 'fetched'}{p}  ({p.stat().st_size:,} bytes)")
+```{python}
+#| label: release-metadata
+#| echo: false
+#| output: false
+
+# Release facts (version, company count, publication date) read straight out
+# of the fetched release JSON, so prose mentions below stay in sync with
+# whatever release RELEASE actually points to.
+
+_release_data = json.loads(RELEASE_JSON.read_text(encoding="utf-8"))
+_release_meta = _release_data["release"]
+
+RELEASE_VERSION_STR   = f"v{_release_meta['version_number']}.{_release_meta['version_minor']}"
+
+# split "." out: pandoc mis-escapes it to \. (LaTeX dot-accent) inside \texttt{}
+RELEASE_VERSION_MAJOR = f"v{_release_meta['version_number']}"
+RELEASE_VERSION_MINOR = str(_release_meta['version_minor'])
+
+RELEASE_COMPANY_COUNT = len(_release_data["companies"])
+RELEASE_DATE          = _release_meta["published_at"][:10]
+```
+
+```{python}
+#| label: performance-metadata
+#| echo: false
+#| output: false
+
+# Evaluation stats (pair counts, accuracy, per-category accuracy) read
+# straight out of the fetched performance snapshot, so the "Pipeline
+# Performance" prose below stays in sync with whatever the snapshot says.
+
+_perf_snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+_perf_snapshot["by_field"] = [
+    r for r in _perf_snapshot["by_field"] if r["field_slug"] not in EXCLUDED_FIELD_SLUGS
+]
+
+_perf_totals = {
+    k: sum(r[k] for r in _perf_snapshot["by_field"])
+    for k in ("correct", "wrong", "fn", "fp", "error", "reviewed_total", "pending_total")
+}
+_perf_totals["accuracy_pct"] = round(100 * _perf_totals["correct"] / _perf_totals["reviewed_total"])
+
+PERF_TOTAL_FMT   = f"{_perf_totals['reviewed_total']:,}"
+PERF_CORRECT_FMT = f"{_perf_totals['correct']:,}"
+PERF_ACCURACY    = _perf_totals["accuracy_pct"]
+
+PERF_WRONG_FMT = f"{_perf_totals['wrong']:,}"
+PERF_WRONG_PCT = round(100 * _perf_totals["wrong"] / _perf_totals["reviewed_total"])
+PERF_FN_FMT    = f"{_perf_totals['fn']:,}"
+PERF_FN_PCT    = round(100 * _perf_totals["fn"] / _perf_totals["reviewed_total"])
+PERF_FP_FMT    = f"{_perf_totals['fp']:,}"
+PERF_FP_PCT    = round(100 * _perf_totals["fp"] / _perf_totals["reviewed_total"])
+PERF_ERROR_FMT = f"{_perf_totals['error']:,}"
+PERF_ERROR_PCT = round(100 * _perf_totals["error"] / _perf_totals["reviewed_total"])
+
+_perf_by_category = {}
+for _row in _perf_snapshot["by_field"]:
+    _agg = _perf_by_category.setdefault(_row["category"], {"correct": 0, "total": 0})
+    _agg["correct"] += _row["correct"]
+    _agg["total"]   += _row["reviewed_total"]
+
+_perf_acc_social_str = f"{100 * _perf_by_category['social']['correct'] / _perf_by_category['social']['total']:.1f}"
+_perf_acc_env_str    = f"{100 * _perf_by_category['environmental']['correct'] / _perf_by_category['environmental']['total']:.1f}"
+# split "." out: pandoc mis-escapes it to \. (LaTeX dot-accent) otherwise
+PERF_ACC_SOCIAL_INT, PERF_ACC_SOCIAL_DEC = _perf_acc_social_str.split(".")
+PERF_ACC_ENV_INT, PERF_ACC_ENV_DEC       = _perf_acc_env_str.split(".")
 ```
 
 ```{python}
@@ -208,7 +329,7 @@ from pathlib import Path
 
 # Indicator schema: prefer the richer local CSV (carries the ESRS reference
 # code), fall back to the public release JSON.
-csv_path = Path("schema_fields_rows.csv")
+csv_path = Path(f"schema_fields_rows_{RELEASE.replace('.', '_')}.csv")
 if csv_path.exists():
     df = (
         pd.read_csv(csv_path)
@@ -218,7 +339,7 @@ if csv_path.exists():
     )
     show_ref = True
 else:
-    fields = json.loads(Path("release_v1_2.json").read_text())["fields"]
+    fields = json.loads(Path(f"release_{RELEASE.replace('.', '_')}.json").read_text(encoding="utf-8"))["fields"]
     df = (
         pd.DataFrame(fields)
           .sort_values(["category", "display_order"])
@@ -226,6 +347,8 @@ else:
     )
     df["reference"] = ""  # not exposed in the public release feed
     show_ref = False
+
+df = df[~df["slug"].isin(EXCLUDED_FIELD_SLUGS)].reset_index(drop=True)
 
 category_meta = {
     "environmental": "Environmental",
@@ -248,7 +371,7 @@ header       = (r"\textbf{Ref.} & \textbf{Indicator} & \textbf{Unit} \\"
                 r"\textbf{Indicator} & \textbf{Unit} \\")
 
 out = [
-    r"\begin{table}[h]",
+    r"\begin{table}[H]",
     r"\centering\footnotesize",
     r"\setlength{\tabcolsep}{6pt}",
     r"\renewcommand{\arraystretch}{1.05}",
@@ -283,172 +406,48 @@ out += [
 print("\n".join(out))
 ```
 
-## Data Point Definition Guide
-
-### Environmental
-
-**Total energy consumption** *(MWh)*
-
-Report the undertaking's total energy consumption from own operations in MWh. Capture one explicit total value only. Include energy from fossil, nuclear, and renewable sources if reported as part of total energy consumption. Do not use energy intensity, energy savings, production volumes, percentages, or segment-only values.
-
-*Variants/Problems:* ---
-
-**Total energy consumption from fossil sources** *(MWh)*
-
-Extract the explicitly reported total energy consumption from fossil sources in MWh for the reporting year, relating to own operations. Record one absolute total value only. Include fossil energy from fuels and purchased fossil-based electricity, heat, steam, or cooling only if they are included in the reported total fossil energy consumption. Do not use total energy consumption, coal/oil/gas subcomponents instead of the total, energy intensity, energy savings, percentages, or energy production values. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-**Total energy consumption from renewable sources** *(MWh)*
-
-Extract the explicitly reported total energy consumption from renewable sources in MWh for the reporting year, relating to own operations. Record one absolute total value only. Include renewable fuel consumption, purchased or acquired renewable electricity, heat, steam, or cooling, and self-generated non-fuel renewable energy only if they are included in the reported total renewable energy consumption. Do not use total energy consumption, renewable subcomponents instead of the total, energy intensity, energy savings, percentages, renewable energy production, or installed capacity values. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-**Scope 1 greenhouse gas emissions** *(tCO~2~eq)*
-
-The absolute value of Scope 1 direct emissions in the given year. Do not use a future target value or the emissions intensity.
-
-*Variants/Problems:* ---
-
-**Scope 2 greenhouse gas emissions (location-based)** *(tCO~2~eq)*
-
-The absolute value of location-based Scope 2 emissions in the given year. Do not use a future target value or the emissions intensity.
-
-*Variants/Problems:* ---
-
-**Scope 2 greenhouse gas emissions (market-based)** *(tCO~2~eq)*
-
-The absolute value of market-based Scope 2 emissions in the given year. Do not use a future target value or the emissions intensity.
-
-*Variants/Problems:* ---
-
-**Total Scope 3 greenhouse gas emissions** *(tCO~2~eq)*
-
-The absolute value of total Scope 3 emissions, i.e., the sum of all Scope 3 categories in the given year. Do not use a future target value or the emissions intensity.
-
-*Variants/Problems:* ---
-
-**Total emissions (location-based)** *(tCO~2~eq)*
-
-The sum of Scope 1, location-based Scope 2, and total Scope 3 emissions in the given year. Do not use a future target value or the emissions intensity.
-
-*Variants/Problems:* ---
-
-**Total emissions (market-based)** *(tCO~2~eq)*
-
-The sum of Scope 1, market-based Scope 2, and total Scope 3 emissions in the given year. Do not use a future target value or the emissions intensity.
-
-*Variants/Problems:* ---
-
-**Total water consumption** *(m^3^)*
-
-Extract the explicitly reported total water consumption from own operations in m^3^ for the reporting year. Record one absolute total value only. Do not use water withdrawal, water discharge, water intensity, recycling or reuse volumes, percentages, targets, or segment-only values instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-**Total use of land** *(m^2^)*
-
-Extract the explicitly reported total land use in m^2^ for the reporting year, relating to own operations where disclosed as a biodiversity- or ecosystem-related land-use metric. Record one absolute total value only. Do not use site area, protected-area area, land-use change over time, land converted, floor area, operational footprint, percentages, or land-related values reported in other units instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-**Total weight of waste generated** *(t)*
-
-Extract the explicitly reported total weight of waste generated from own operations in tonnes for the reporting year. Record one absolute total value only. Do not use waste diverted from disposal, waste directed to disposal, recycled waste, hazardous waste only, non-hazardous waste only, percentages, intensity metrics, or waste values reported for individual streams instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-**Total weight of non-recycled waste** *(t)*
-
-Extract the explicitly reported total weight of non-recycled waste from own operations in tonnes for the reporting year. Record one absolute total value only. Do not use the percentage of non-recycled waste, total waste generated, waste diverted from disposal, waste directed to disposal, recycled waste, hazardous waste only, non-hazardous waste only, or waste values reported for individual treatment types instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-**Share of non-recycled waste to total waste** *(%)*
-
-Extract the explicitly reported share of non-recycled waste relative to total waste from own operations for the reporting year, expressed as a percentage. Record one reported percentage value only. Do not use the total weight of non-recycled waste, total waste generated, recycled waste share, waste diverted from disposal, hazardous waste only, non-hazardous waste only, or percentages for individual waste streams or treatment types instead of the total share. If multiple values are reported, use the consolidated group-level figure for the current reporting year.
-
-*Variants/Problems:* ---
-
-### Governance
-
-**Total number of confirmed incidents of corruption or bribery**
-
-Extract the explicitly reported total number of confirmed incidents of corruption or bribery during the reporting period. Record one absolute total value only. Include incidents involving actors in the value chain only where the undertaking or its own workers are directly involved. Do not use the number of convictions, legal cases, dismissals or disciplinary actions, terminated or non-renewed business partner contracts, or qualitative descriptions of incidents instead of the total number of confirmed incidents. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* ---
-
-### Social
-
-**Total number of employees**
-
-Extract the explicitly reported total number of employees in the undertaking's own workforce for the reporting period. Record one absolute total value only. Do not use full-time equivalent (FTE) values, permanent employees only, temporary employees only, non-guaranteed hours employees only, employees by gender, employees by country, or numbers relating to workers who are not employees instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* Often there are different definitions of the total number of employees, especially between the financial and the sustainability report. We we find several one, we would choose the one reported in the sustainability report.
-
-**Total number of female employees**
-
-Extract the explicitly reported total number of female employees in the undertaking's own workforce for the reporting period. Record one absolute total value only. Do not use the total number of employees, percentages or gender shares, female permanent employees only, female temporary employees only, female non-guaranteed hours employees only, or figures relating to workers who are not employees instead of the total. Do not calculate the total from subcomponents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* ---
-
-**Share of employees aged 50 or older** *(%)*
-
-Extract the explicitly reported share of employees aged 50 or older in the undertaking's own workforce for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the total number of employees aged 50 or older, the total number of employees, age-group counts without a reported percentage, percentages for other age groups, or figures relating to workers who are not employees instead of the share. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* ---
-
-**Rate of employee turnover** *(%)*
-
-Extract the explicitly reported rate of employee turnover in the undertaking's own workforce for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the total number of employees who left the undertaking, the total number of employees, hiring rates, retention rates, percentages for specific employee groups only, or figures relating to workers who are not employees instead of the turnover rate. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* ---
-
-**Percentage of total employees covered by collective bargaining agreements** *(%)*
-
-Extract the explicitly reported percentage of the undertaking's total employees covered by collective bargaining agreements for the reporting period. Record one reported percentage value only. Do not use the existence of collective bargaining agreements without a reported coverage percentage, country-level percentages only, region-level percentages only, percentages relating to non-employees, or figures relating to workers' representatives instead of the total employee coverage percentage. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* —
-
-**Share of women in top management** *(%)*
-
-Extract the explicitly reported share of women in top management for the reporting period, expressed as a percentage. Record one reported percentage value only. Do not use the number of women in top management, the share of women in the total workforce, the share of women on the board, gender diversity metrics for management levels other than top management, or percentages for age groups instead of the share of women in top management. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* Different definitions of top management at firm-level.
-
-**Rate of recordable work-related accidents** *(per million hours worked)*
-
-Extract the rate of recordable work-related accidents defined as the number of cases divided by the number of total hours worked by people in its own workforce, multiplied by 1,000,000. This represents the number of cases per one million hours worked and roughly corresponds to the total hours worked by 500 full-time workers in one year.
-
-*Variants/Problems:* ---
-
-**Gender pay gap** *(%)*
-
-Extract the gender pay gap defined as the difference in average pay levels between female and male employees, expressed as a percentage of the average pay level of male employees.
-
-*Variants/Problems:* Some companies report negative gender pay gap (i.e. women earn more than man). In this case we report negative values.
-
-**Annual total remuneration ratio**
-
-Extract the ratio of the highest-paid individual to the median annual total remuneration for all employees (excluding the highest-paid individual).
-
-*Variants/Problems:* Different ways of reporting (e.g., 250:1, 250, 25000%). In SRN Lab we would report the remuneration ratio from the example as 250.
-
-**Number of severe human rights issues and incidents**
-
-Extract the explicitly reported number of severe human rights issues and incidents connected to the company's upstream and downstream value chain during the reporting period. Record one absolute total value only. Do not use general human rights incidents not identified as severe, incidents involving the company's own workforce only, qualitative descriptions of cases, legal proceedings, remediation actions, or policy statements instead of the total number of severe human rights issues and incidents. If multiple values are reported, use the consolidated group-level figure for the current reporting period.
-
-*Variants/Problems:* ---
-
-## Pipeline setup
-
-Our extraction pipeline builds on the design described by @forster2026. For each firm-year, we extract a predefined set of 25 ESG indicators from the firm's annual report and sustainability report. Figure \ref{fig:pipeline} summarises the pipeline end-to-end.
-
-Text, tables, and figures of the source documents are first parsed and then chunked — that is, split into smaller units — using Docling [@docling2024]. To make chunks quickly retrievable, we embed each chunk with Mistral's text embedding model, `mistral-embed-2312` [@mistralembed2023]. The resulting numerical vectors are stored in a cosine-similarity index that serves as the backbone for retrieval.
+```{=latex}
+\pagebreak
+\begin{multicols}{2}
+```
+
+### Pipeline Setup
+
+Our extraction pipeline builds on the design described by @forster2026. For each firm-year, we extract a predefined 
+set of ESG indicators from the firm's annual report and sustainability report. 
+Figure \ref{fig:pipeline} summarises the pipeline end-to-end.
+
+The pipeline consists of multiple steps that can be grouped into two lanes: a one-off indexing lane that runs once per
+document, and a per-indicator extraction lane that runs once for each indicator. 
+
+The indexing lane prepares the source documents for retrieval. It first parses the documents with Docling
+[@docling2024] to extract text, tables, and figures, then splits the text into overlapping chunks of roughly
+1,000 characters with a 200-character overlap. Each chunk is embedded into a vector representation using
+Mistral's text embedding model `mistral-embed-2312` [@mistralembed2023] and stored in a `pgvector` cosine-similarity
+index. This index allows for efficient retrieval of relevant chunks during the extraction phase.
+
+The extraction lane extracts the value of each indicator from the indexed chunks. For each indicator, Mistral's
+language model `mistral-large-2513` [@mistrallarge2025] generates a natural-language query based on the indicator's
+definition, embeds the query, and
+retrieves the top five relevant chunks using a hybrid retrieval strategy that combines vector similarity with BM25
+lexical scoring. Reciprocal rank fusion (RRF) is used to merge the two ranked lists, with weights of $0.7$ for the
+vector channel and $0.3$ for the lexical channel. A cosine-similarity floor of $0.70$ is applied to filter out less
+relevant chunks. The retrieved chunks, together with a custom prompt and a structured output schema, are passed to
+Mistral's language model `mistral-large-2513` [@mistrallarge2025]. The prompt specifies the indicator definition,
+the expected unit of measurement, and instructions
+for handling absent disclosures. The model returns the extracted value, its source page, a confidence score in
+$[0,1]$, and a short justification. Outputs are validated in-flight against a Zod schema; responses that violate
+the schema are discarded and logged rather than retried, to avoid propagating model errors downstream.
+If a response is well-formed but reports that the answer is present in the retrieved sources yet could not be
+extracted as a clean value, the query is reformulated by the model and retrieval is repeated, up to three times in total.
+All indicators per firm-year are extracted in batches of five and results are written to a relational table 
+with one row per indicator–firm–year triplet. Each record retains the source-document identifier and page number, 
+enabling manual verification against the original filing.
 
 ```{=latex}
-\begin{figure}[t]
+\end{multicols}
+
+\begin{figure}[H]
   \centering
   \resizebox{\linewidth}{!}{%
     \begin{tikzpicture}[
@@ -474,7 +473,7 @@ Text, tables, and figures of the source documents are first parsed and then chun
       \node[stage={clrPurple50}{clrPurple800}, right=of chunk](embed) {\textbf{Embedding}\\[1pt]{\scriptsize Mistral Embed,\\per chunk}};
       \node[stage={clrPurple50}{clrPurple800}, right=of embed](index) {\textbf{Vector index}\\[1pt]{\scriptsize pgvector,\\cosine sim.}};
 
-      \node[laneLabel] at ($(pdfs.west)+(-0.25,0)$) {Indexing\\{\scriptsize\itshape per firm-year}};
+      \node[laneLabel] at ($(pdfs.west)+(-0.25,0)$) {Indexing\\{\scriptsize\itshape per document}};
 
       \draw[arr] (pdfs)  -- (parse);
       \draw[arr] (parse) -- (chunk);
@@ -482,7 +481,7 @@ Text, tables, and figures of the source documents are first parsed and then chun
       \draw[arr] (embed) -- (index);
 
       % ── Lane B: Extraction (per indicator) ────────────────────────────────────
-      \node[stage={clrGray50}{clrGray800},   below=2.2cm of pdfs]  (field)  {\textbf{Indicator}\\[1pt]{\scriptsize name\,+\,definition\\(schema field)}};
+      \node[stage={clrGray50}{clrGray800},   below=1.6cm of pdfs]  (field)  {\textbf{Indicator}\\[1pt]{\scriptsize name\,+\,definition\\(schema field)}};
       \node[stage={clrAmber50}{clrAmber800}, right=of field]       (qgen)   {\textbf{Query}\\[1pt]{\scriptsize Mistral Large\\generates query}};
       \node[stage={clrPurple50}{clrPurple800}, right=of qgen]      (qemb)   {\textbf{Query embed}\\[1pt]{\scriptsize Mistral Embed}};
       \node[stage={clrTeal50}{clrTeal800},   right=of qemb]        (hybrid) {\textbf{Hybrid retrieval}\\[1pt]{\scriptsize vector\,+\,BM25\\RRF, top $k{=}5$}};
@@ -504,7 +503,7 @@ Text, tables, and figures of the source documents are first parsed and then chun
       \draw[arrDash, color=clrPurple600]
         (llm.north) -- ++(0,0.55) -| (qgen.north);
       \node[font=\scriptsize\sffamily, text=clrPurple600] at
-        ($(qgen.north)!0.5!(llm.north)+(0,0.75)$)
+        ($(qgen.north)!0.35!(llm.north)+(0,0.75)$)
         {reformulate query ($\leq 3$ retries)};
 
       % dashed container around the extraction lane (per-indicator loop)
@@ -519,40 +518,48 @@ Text, tables, and figures of the source documents are first parsed and then chun
 
     \end{tikzpicture}%
   }
-  \caption{ESG extraction pipeline. \textbf{Top lane (indexing, one-off per firm-year):} the annual and sustainability reports are parsed with Docling, split into overlapping chunks ($\sim$1{,}000 characters, 200-character overlap, sentence-aware), embedded with Mistral Embed, and stored in a \texttt{pgvector} cosine-similarity index. \textbf{Bottom lane (extraction, per indicator):} Mistral Large turns the indicator definition into a search query; the query is embedded; a hybrid retrieval combines vector similarity with BM25 lexical scoring via reciprocal rank fusion (RRF, weights $0.7/0.3$) and returns the top five chunks; Mistral Large then produces a structured extraction validated against a Zod schema and stored together with its source-page provenance. If the model reports that the information is contained in the retrieved sources but cannot be extracted as-is, the query is reformulated and retrieval is retried (at most three times).}
+  \caption{ESG extraction pipeline. Top lane: one-off indexing per document. Bottom lane: per-indicator extraction, repeated for all 25 indicators (batches of five); the dashed arrow marks the query-reformulation retry loop.}
   \label{fig:pipeline}
 \end{figure}
 ```
 
-For each of the 25 indicators, retrieval combines two complementary signals in a single hybrid step. Mistral Large first turns the indicator definition into a natural-language search query, which is embedded with Mistral Embed and submitted to the pgvector index alongside a BM25 lexical query over the chunk text. The two ranked lists are merged via reciprocal rank fusion (RRF) with weights $0.7$ for the vector channel and $0.3$ for the lexical channel, and the top five chunks (subject to a cosine-similarity floor of $0.70$) are returned. This hybrid formulation is motivated by the observation that purely semantic retrieval occasionally misses tables or boilerplate passages that use the exact regulatory term, while pure keyword matching ignores synonymous formulations.
+```{=latex}
+\begin{multicols}{2}
+```
 
-The retrieved chunks, together with a custom prompt and a structured output schema, are passed to the language model. The prompt specifies the indicator definition, the expected unit of measurement, and instructions for handling absent disclosures. The model returns the extracted value, its source page, a confidence score in $[0,1]$, and a short justification. Outputs are validated in-flight against a Zod schema; responses that violate the schema are discarded and logged rather than retried, to avoid propagating model errors downstream. If a response is well-formed but reports that the answer is present in the retrieved sources yet could not be extracted as a clean value, the query is reformulated by the model and retrieval is repeated, up to three times in total.
+# Pipeline Performance
 
-The loop runs over all 25 indicators per firm-year in batches of five and results are written to a relational table with one row per indicator–firm–year triplet. Each record retains the source-document identifier and page number, enabling manual verification against the original filing.
+The systematic extraction allows for a quantiative assessment of the pipeline's performance. We evaluate every 
+AI-extracted value against a human-verified ground truth.
 
-## Pipeline performance
 
-To assess extraction quality we evaluate every AI-extracted value against a human-verified ground truth. The evaluation set used here is the human-reviewed subset of public release \texttt{v1.2} of the \emph{Main ESRS KPI} project, covering 4,608 firm--indicator--year pairs for Euro Stoxx 50 and DAX 40 companies in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI's output, replaced it with the correct number, or marked the indicator as not disclosed. Outcomes are partitioned into five mutually exclusive classes: \emph{correct} (the AI value matches the reviewer's value, including agreement on non-disclosure); \emph{wrong} (both the AI and the reviewer extracted a number but the values disagree); \emph{false negative} (the AI returned \texttt{NOT\_FOUND} but the reviewer found a value); \emph{false positive} (the AI returned a value but the reviewer marked the indicator as not disclosed); and \emph{schema error} (the AI's structured output failed Zod validation). @fig-performance reports the per-indicator breakdown of these outcomes, sorted by accuracy.
+## Main ESRS KPI dataset
 
-Aggregated across all 25 indicators, the pipeline reaches an accuracy of $72\%$ on the reviewed subset (3,322 of 4,608 pairs). Breaking this down by category, governance (one indicator) and social ($75.0\%$) lie slightly above this mean while environmental indicators ($69.8\%$) lie slightly below it, driven primarily by the harder Scope 1--3 greenhouse-gas emissions. Across error modes, \emph{wrong} extractions (619 pairs, $13\%$ of the reviewed set) are the largest single failure class, followed by \emph{false negatives} (443 pairs, $10\%$); \emph{false positives} (124, $3\%$) and \emph{schema errors} (100, $2\%$) are comparatively rare.
+ The evaluation set used for the *Main ESRS KPI* dataset is the human-reviewed subset of public release \texttt{`{python} RELEASE_VERSION_MAJOR`.`{python} RELEASE_VERSION_MINOR`}, covering `{python} PERF_TOTAL_FMT` firm--indicator--year pairs for Euro Stoxx 50 and DAX 40 companies in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI's output, replaced it with the correct number, or marked the indicator as not disclosed. Outcomes are partitioned into five mutually exclusive classes: \emph{correct} (the AI value matches the reviewer's value, including agreement on non-disclosure); \emph{wrong} (both the AI and the reviewer extracted a number but the values disagree); \emph{false negative} (the AI returned \texttt{NOT\_FOUND} but the reviewer found a value); \emph{false positive} (the AI returned a value but the reviewer marked the indicator as not disclosed); and \emph{schema error} (the AI's structured output failed Zod validation). @fig-performance reports the per-indicator breakdown of these outcomes, sorted by accuracy.
+
+Aggregated across all 25 indicators, the pipeline reaches an accuracy of $`{python} PERF_ACCURACY`\%$ on the reviewed subset (`{python} PERF_CORRECT_FMT` of `{python} PERF_TOTAL_FMT` pairs). Breaking this down by category, governance (one indicator) and social ($`{python} PERF_ACC_SOCIAL_INT`.`{python} PERF_ACC_SOCIAL_DEC`\%$) lie slightly above this mean while environmental indicators ($`{python} PERF_ACC_ENV_INT`.`{python} PERF_ACC_ENV_DEC`\%$) lie slightly below it, driven primarily by the harder Scope 1--3 greenhouse-gas emissions. Across error modes, \emph{wrong} extractions (`{python} PERF_WRONG_FMT` pairs, $`{python} PERF_WRONG_PCT`\%$ of the reviewed set) are the largest single failure class, followed by \emph{false negatives} (`{python} PERF_FN_FMT` pairs, $`{python} PERF_FN_PCT`\%$); \emph{false positives} (`{python} PERF_FP_FMT`, $`{python} PERF_FP_PCT`\%$) and \emph{schema errors} (`{python} PERF_ERROR_FMT`, $`{python} PERF_ERROR_PCT`\%$) are comparatively rare.
+
+False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3), where reports frequently use bespoke wording, hide the value in a table footnote, or report partial sub-figures that confuse the retrieval step. The same indicators also produce many \emph{wrong} extractions because firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the LLM occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above $84\%$; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is the lone outlier on the low end ($46\%$): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high \emph{wrong} rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.
+
+
+```{=latex}
+\end{multicols}
+```
 
 ```{python}
 #| label: fig-performance
-#| fig-cap: "Per-indicator extraction accuracy on the human-reviewed subset of public release v1.2 (4,608 firm--indicator--year pairs covering Euro Stoxx 50 and DAX 40 companies in reporting years 2024--2025). Bars are sorted by accuracy. Each stacked bar shows the composition of the reviewed pairs into five outcomes; the rightmost annotation reports the number of reviewed pairs $n$ and the per-indicator accuracy. The overall accuracy of the pipeline on this set is 72\\%."
-#| fig-pos: "p"
+#| fig-cap: "Per-indicator extraction accuracy on the human-reviewed subset of the public release covering Euro Stoxx 50 and DAX 40 companies in reporting years 2024--2025. Bars are sorted by accuracy. Each stacked bar shows the composition of the reviewed pairs into five outcomes; the rightmost annotation reports the number of reviewed pairs $n$ and the per-indicator accuracy."
+#| fig-pos: "H"
 #| fig-width: 6.5
 #| fig-height: 7.8
 #| echo: false
 #| warning: false
 
-import json, textwrap
+import textwrap
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open("performance_snapshot.json") as f:
-    snap = json.load(f)
-
-rows = sorted(snap["by_field"], key=lambda r: r.get("accuracy_pct") or 0)
+rows = sorted(_perf_snapshot["by_field"], key=lambda r: r.get("accuracy_pct") or 0)
 
 def wrap(s, w=42):
     return textwrap.fill(s[:1].upper() + s[1:], width=w)
@@ -622,15 +629,26 @@ ax.legend(
     handlelength=1.1, handleheight=0.9, columnspacing=1.2,
 )
 
-plt.subplots_adjust(left=0.40, right=0.82, top=0.95, bottom=0.06)
+AX_LEFT, AX_RIGHT = 0.40, 0.82
+
+fig.suptitle(
+    f"Public release {RELEASE_VERSION_STR} — {PERF_TOTAL_FMT} firm-indicator-year pairs, "
+    f"{PERF_ACCURACY}% overall accuracy",
+    fontsize=8, color=CLR_TEXT, x=(AX_LEFT + AX_RIGHT) / 2, ha="center", y=0.985,
+)
+
+plt.subplots_adjust(left=AX_LEFT, right=AX_RIGHT, top=0.91, bottom=0.06)
 plt.show()
 ```
 
-False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3), where reports frequently use bespoke wording, hide the value in a table footnote, or report partial sub-figures that confuse the retrieval step. The same indicators also produce many \emph{wrong} extractions because firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the model occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above $84\%$; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is the lone outlier on the low end ($46\%$): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high \emph{wrong} rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.
+```{=latex}
+\begin{multicols}{2}
+```
+# Working with the Data
+All inputs underlying the figures and tables of this document are publicly available and downloaded at render time. The
+following section describes how to access the data.
 
-## API accessibility
-
-The extracted dataset is exposed through a small, versioned REST API at \href{https://api.srnav.com}{\texttt{api.srnav.com}}. Each *release* is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g. \texttt{v1.2}) rather than to \texttt{latest}, so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at \href{https://api.srnav.com}{\texttt{api.srnav.com}}, which serves a Swagger UI generated from the OpenAPI specification at \href{https://api.srnav.com/openapi.json}{\texttt{/openapi.json}}.
+The extracted dataset is exposed through a small, versioned REST API at \href{https://api.srnav.com}{\texttt{api.srnav.com}}. Each *release* is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g. \texttt{`{python} RELEASE_VERSION_MAJOR`.`{python} RELEASE_VERSION_MINOR`}) rather than to \texttt{latest}, so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at \href{https://api.srnav.com}{\texttt{api.srnav.com}}, which serves a Swagger UI generated from the OpenAPI specification at \href{https://api.srnav.com/openapi.json}{\texttt{/openapi.json}}.
 
 Access is gated by a personal API token, requested at \href{https://srnav.com}{\texttt{srnav.com}} and passed in the standard \texttt{Authorization: Bearer} header. Tokens are scoped to the issuing account and can be rotated or revoked at any time; we ask consumers to keep them out of version control and out of figure source files. The two endpoints needed for most research workflows are:
 
@@ -640,9 +658,15 @@ Access is gated by a personal API token, requested at \href{https://srnav.com}{\
   \item[\texttt{GET /projects/\{slug\}/releases/\{version\}}] Returns the full release as JSON, where \texttt{\{version\}} accepts \texttt{latest}, \texttt{v1}, or \texttt{v2.1}. A CSV variant is available at the same path with a \texttt{.csv} suffix and produces a flattened, header-included file suitable for direct loading into a statistical package.
 \end{description}
 
-Each row of a release identifies a single firm--indicator--year observation and carries the published value together with the firm's identifier, ISIN, country, sector, industry, and stock index membership; the indicator's slug, name, category, unit, and data type; the year; a \texttt{source} flag (\texttt{human} for reviewer-verified values, \texttt{ai} for AI-only extractions awaiting review); the source document identifier; and a page reference for traceability against the original filing.
+Each row of a release identifies a single firm--indicator--year observation and carries the published value together
+with the firm's identifier, ISIN, country, sector, industry, and stock index membership; the indicator's slug, name,
+category, unit, and data type; the year; a \texttt{source} flag (\texttt{human} for reviewer-verified values,
+\texttt{ai} for AI-only extractions awaiting review); the source document identifier; and a page reference for
+traceability against the original filing. A minimal request fetches the latest release:
 
-A minimal request fetches the latest release:
+```{=latex}
+\end{multicols}
+```
 
 ``` bash
 curl -H "Authorization: Bearer $SRN_TOKEN" \
@@ -654,7 +678,7 @@ The same payload is one line away from a tidy data frame in Python — the follo
 ``` python
 import os, requests, pandas as pd
 
-VERSION = "v1.2"
+VERSION = "v2.4"
 headers = {"Authorization": f"Bearer {os.environ['SRN_TOKEN']}"}
 
 resp = requests.get(
@@ -677,24 +701,28 @@ print(ghg[["company_name", "year", "field_slug", "value", "unit", "source"]])
 The CSV variant is most convenient in R, where it can be read in a single call:
 
 ``` r
+library(httr2)
 library(readr)
 
-token   <- Sys.getenv("SRN_TOKEN")
-version <- "v1.2"
+version <- "v2.4"
+
+resp <- request(paste0("https://api.srnav.com/projects/main-esrs-kpi/releases/",
+                        version, ".csv")) |>
+  req_auth_bearer_token(Sys.getenv("SRN_TOKEN")) |>
+  req_perform()
 
 df <- read_csv(
-  paste0("https://api.srnav.com/projects/main-esrs-kpi/releases/",
-         version, ".csv"),
+  resp_body_string(resp),
   col_types = cols(.default = col_character(), value = col_double()),
   na        = c("", "NA", "NOT_FOUND"),
   show_col_types = FALSE,
   guess_max = 1e5,
-  # readr passes header arguments via `httr::add_headers` when the URL is fetched
-  # by an internal call to httr; for explicit auth use the `httr2` recipe below.
 )
 ```
 
-For programmatic discovery of the most recent published release and for any workflow that requires per-request control (e.g. rate-limit handling or audit logging), \texttt{httr2} composes cleanly with the `releases` index:
+For programmatic discovery of the most recent published release and for any workflow that requires per-request control
+(e.g. rate-limit handling or audit logging), \texttt{httr2} composes cleanly with the `releases` index:
+
 
 ``` r
 library(httr2)
@@ -708,9 +736,74 @@ latest   <- Filter(\(r) is.null(r$retracted_at), releases)[[1]]$version
 message("Pinned to ", latest)
 ```
 
-We encourage users to cite the dataset by its release version (e.g., *Sustainability Reporting Navigator, Main ESRS KPI dataset, release v1.2, published 2026-05-14*) and, where possible, to record the release's \texttt{published\_at} timestamp in supplementary materials so that subsequent retractions or revisions can be detected. Requests, feature suggestions, and bug reports are welcome by email at \href{mailto:hello@srnav.com}{\texttt{hello@srnav.com}}.
+```{=latex}
+\begin{multicols}{2}
+```
 
-### References
+We encourage users to cite the dataset by its release version (e.g., *Sustainability Reporting Navigator, Main ESRS KPI dataset, release `{python} RELEASE_VERSION_STR`, published `{python} RELEASE_DATE`*) and, where possible, to record the release's \texttt{published\_at} timestamp in supplementary materials so that subsequent retractions or revisions can be detected. Requests, feature suggestions, and bug reports are welcome by email at \href{mailto:hello@srnav.com}{\texttt{hello@srnav.com}}.
+
+```{=latex}
+\clearpage
+```
+
+# References {.unnumbered}
 
 ::: {#refs}
 :::
+
+```{=latex}
+\clearpage
+\appendix
+\setcounter{section}{1}
+```
+
+# Appendix {.unnumbered}
+
+<!-- TODO: durch echten Anhang-Inhalt ersetzen -->
+
+## Data Point Package Definition Guide {.unnumbered}
+
+### *Main ESRS KPI* dataset {.unnumbered .unlisted}
+
+```{python}
+#| echo: false
+#| output: asis
+
+# Reuses `df` and `category_meta` from the "Data points" chunk above —
+# same Quarto/Jupyter session, no re-fetch. Note: this prints plain
+# Markdown (not raw LaTeX), so no esc() here — pandoc handles the
+# LaTeX-escaping when it compiles this into the PDF.
+
+# Interim store for curated "Variants/Problems" notes -- not yet captured
+# in schema_fields_rows.csv (manual_instructions is empty for all rows).
+# Move these into that column once the schema has a home for them, then
+# drop this dict.
+variants = {
+    "employees_total": "Often there are different definitions of the total "
+        "number of employees, especially between the financial and the "
+        "sustainability report. If we find several, we choose the one "
+        "reported in the sustainability report.",
+    "topmgmt_female": "Different definitions of top management at firm-level.",
+    "genderpaygap": "Some companies report negative gender pay gap (i.e. "
+        "women earn more than man). In this case we report negative values.",
+    "remunerationratio": "Different ways of reporting (e.g., 250:1, 250, "
+        "25000%). In SRN Lab we would report the remuneration ratio from "
+        "the example as 250.",
+}
+
+for cat in ["environmental", "governance", "social"]:
+    print(f"#### {category_meta[cat]}\n")
+    for _, row in df[df["category"] == cat].iterrows():
+        unit = (f" *({row['unit']})*"
+                if pd.notna(row["unit"]) and str(row["unit"]).strip()
+                else "")
+        print(f"**{row['name'].capitalize()}**{unit}\n")
+        print(f"{row['description']}\n")
+        note = variants.get(row["slug"])
+        print(f"*Variants/Problems:* {note or '---'}\n")
+```
+
+
+```{=latex}
+\end{multicols}
+```
