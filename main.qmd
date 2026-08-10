@@ -75,6 +75,12 @@ format:
             minimum width=0.55cm, minimum height=0.35cm,
             draw, line width=0.4pt, inner sep=0pt},
         }
+
+        % Data point definitions (appendix): indented description with a
+        % hairline separator after each entry.
+        \newcommand{\dpdescstart}{\par\nobreak\begingroup\leftskip=1.5em\relax}
+        \newcommand{\dpdescend}{\par\endgroup\addvspace{0.5em}%
+          {\color{clrGray200}\rule{\linewidth}{0.4pt}}\par\addvspace{0.7em}}
     toc: true
     toc-depth: 3
     number-sections: true
@@ -140,7 +146,7 @@ For each (firm, year, report) we compute a set of report-level features describi
 ### Environmental and social topics
 
 We conduct the topic classification at the sentence level to capture the share of text devoted to different environmental and social topics. 
-We tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model (ESRS Bert) trained in @Donau2024-yc. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model's confidence score, and the original page number.
+We tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model (ESRS-BERT) trained in @Donau2024-yc. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model's confidence score, and the original page number.
 
 The classifier covers nine topic labels aligned with the topical ESRS standards: five environmental — *E1 Climate Change*, *E2 Pollution*, *E3 Water and Marine Resources*, *E4 Biodiversity and Ecosystems*, and *E5 Resource Use and Circular Economy* — and four social — *S1 Own Workforce*, *S2 Workers in the Value Chain*, *S3 Affected Communities*, and *S4 Consumers and End-Users*. 
 
@@ -203,54 +209,54 @@ ESRS KPI dataset*. The full definitions are provided in the Section [Data Point 
 #| echo: false
 #| output: false
 
-import json, re, urllib.request
-from pathlib import Path
+import json, urllib.error, urllib.request
 
-# === Choose the release version here. ===
+# === Which release to document. ===
+#
+# "latest" tracks the newest published, non-retracted release, so this document
+# re-describes itself on every render. Pin an explicit version ("v2.4") to
+# reproduce an earlier build of the paper.
 
-RELEASE      = "v2.4"
+RELEASE = "latest"
 
-# ========================================
+# ==================================
 
-BASE         = f"https://lab.srnav.com/p/main-esrs-kpi/{RELEASE}"
-RELEASE_JSON = Path(f"release_{RELEASE.replace('.', '_')}.json")
-SNAPSHOT     = Path(f"performance_snapshot_{RELEASE.replace('.', '_')}.json")
+PROJECT  = "main-esrs-kpi"
+META_URL = f"https://api.srnav.com/projects/{PROJECT}/releases/{RELEASE}/meta"
 
 # Datapoints added to the package that are out of scope for this whitepaper.
 EXCLUDED_FIELD_SLUGS = {"revenues", "currency"}
 
-def _http_get(url: str) -> bytes:
+# Everything this document needs about the release — indicator definitions, the
+# company universe, and the release-time accuracy snapshot — comes from a single
+# public, unauthenticated endpoint. It deliberately excludes the value rows
+# (3.7 MB in v2.4); the paper describes the dataset, it doesn't recompute it.
+def _fetch_release_meta(url: str) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": "srn-whitepaper/1.0"})
-    return urllib.request.urlopen(req, timeout=30).read()
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(
+            f"{url} returned HTTP {e.code}. Releases are served from "
+            f"api.srnav.com; check that RELEASE ({RELEASE!r}) exists."
+        ) from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(
+            f"Could not reach {url} ({e.reason}). Rendering this document "
+            "requires network access to api.srnav.com."
+        ) from e
 
-def _balanced(text: str, start: int) -> str:
-    depth, in_str, q, esc = 0, False, None, False
-    for i in range(start, len(text)):
-        c = text[i]
-        if in_str:
-            if   esc:        esc = False
-            elif c == "\\":  esc = True
-            elif c == q:     in_str = False
-        else:
-            if   c in ('"', "'"): in_str, q = True, c
-            elif c == "{":         depth += 1
-            elif c == "}":
-                depth -= 1
-                if depth == 0:
-                    return text[start: i + 1]
-    raise RuntimeError("unbalanced braces")
+_release = _fetch_release_meta(META_URL)
 
-if not RELEASE_JSON.exists():
-    RELEASE_JSON.write_bytes(_http_get(f"{BASE}/data.json"))
-
-if not SNAPSHOT.exists():
-    html   = _http_get(BASE).decode("utf-8")
-    anchor = html.find("performance:{")
-    if anchor == -1:
-        raise RuntimeError("performance snapshot not found on release page")
-    js   = _balanced(html, html.find("{", anchor))
-    text = re.sub(r"([{,])([A-Za-z_]\w*):", r'\1"\2":', js)
-    SNAPSHOT.write_text(json.dumps(json.loads(text), indent=2), encoding="utf-8")
+# Releases published before the accuracy snapshot was introduced carry a null
+# here. Fail loudly rather than half-rendering the performance section.
+if not _release.get("performance_snapshot"):
+    raise RuntimeError(
+        f"Release {_release['version']} has no performance snapshot, so the "
+        "Pipeline Performance section cannot be built. Pin RELEASE to a "
+        "release that has one."
+    )
 ```
 
 ```{python}
@@ -259,20 +265,17 @@ if not SNAPSHOT.exists():
 #| output: false
 
 # Release facts (version, company count, publication date) read straight out
-# of the fetched release JSON, so prose mentions below stay in sync with
-# whatever release RELEASE actually points to.
+# of the fetched release metadata, so prose mentions below stay in sync with
+# whatever release RELEASE actually resolved to.
 
-_release_data = json.loads(RELEASE_JSON.read_text(encoding="utf-8"))
-_release_meta = _release_data["release"]
-
-RELEASE_VERSION_STR   = f"v{_release_meta['version_number']}.{_release_meta['version_minor']}"
+RELEASE_VERSION_STR   = f"v{_release['version_number']}.{_release['version_minor']}"
 
 # split "." out: pandoc mis-escapes it to \. (LaTeX dot-accent) inside \texttt{}
-RELEASE_VERSION_MAJOR = f"v{_release_meta['version_number']}"
-RELEASE_VERSION_MINOR = str(_release_meta['version_minor'])
+RELEASE_VERSION_MAJOR = f"v{_release['version_number']}"
+RELEASE_VERSION_MINOR = str(_release['version_minor'])
 
-RELEASE_COMPANY_COUNT = len(_release_data["companies"])
-RELEASE_DATE          = _release_meta["published_at"][:10]
+RELEASE_COMPANY_COUNT = len(_release["companies"])
+RELEASE_DATE          = _release["published_at"][:10]
 ```
 
 ```{python}
@@ -281,10 +284,10 @@ RELEASE_DATE          = _release_meta["published_at"][:10]
 #| output: false
 
 # Evaluation stats (pair counts, accuracy, per-category accuracy) read
-# straight out of the fetched performance snapshot, so the "Pipeline
+# straight out of the release's performance snapshot, so the "Pipeline
 # Performance" prose below stays in sync with whatever the snapshot says.
 
-_perf_snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+_perf_snapshot = _release["performance_snapshot"]
 _perf_snapshot["by_field"] = [
     r for r in _perf_snapshot["by_field"] if r["field_slug"] not in EXCLUDED_FIELD_SLUGS
 ]
@@ -324,30 +327,14 @@ PERF_ACC_ENV_INT, PERF_ACC_ENV_DEC       = _perf_acc_env_str.split(".")
 ```{python}
 #| echo: false
 #| output: asis
-import json, pandas as pd
-from pathlib import Path
+import pandas as pd
 
-# Indicator schema: prefer the richer local CSV (carries the ESRS reference
-# code), fall back to the public release JSON.
-csv_path = Path(f"schema_fields_rows_{RELEASE.replace('.', '_')}.csv")
-if csv_path.exists():
-    df = (
-        pd.read_csv(csv_path)
-          .query("is_active == True")
-          .sort_values(["category", "display_order"])
-          .reset_index(drop=True)
-    )
-    show_ref = True
-else:
-    fields = json.loads(Path(f"release_{RELEASE.replace('.', '_')}.json").read_text(encoding="utf-8"))["fields"]
-    df = (
-        pd.DataFrame(fields)
-          .sort_values(["category", "display_order"])
-          .reset_index(drop=True)
-    )
-    df["reference"] = ""  # not exposed in the public release feed
-    show_ref = False
-
+# Indicator schema, as frozen into the release.
+df = (
+    pd.DataFrame(_release["fields"])
+      .sort_values(["category", "display_order"])
+      .reset_index(drop=True)
+)
 df = df[~df["slug"].isin(EXCLUDED_FIELD_SLUGS)].reset_index(drop=True)
 
 category_meta = {
@@ -364,11 +351,7 @@ def esc(s):
             "~": r"\textasciitilde{}", "^": r"\textasciicircum{}"}
     return "".join(repl.get(c, c) for c in str(s))
 
-tabular_spec = "@{}l l l@{}" if show_ref else "@{}l l@{}"
-ncols        = 3 if show_ref else 2
-header       = (r"\textbf{Ref.} & \textbf{Indicator} & \textbf{Unit} \\"
-                if show_ref else
-                r"\textbf{Indicator} & \textbf{Unit} \\")
+ncols = 2
 
 out = [
     r"\begin{table}[H]",
@@ -377,9 +360,9 @@ out = [
     r"\renewcommand{\arraystretch}{1.05}",
     r"\caption{ESG indicators extracted by the pipeline.}",
     r"\label{tab:indicators}",
-    rf"\begin{{tabular}}{{{tabular_spec}}}",
+    r"\begin{tabular}{@{}l l@{}}",
     r"\toprule",
-    header,
+    r"\textbf{Indicator} & \textbf{Unit} \\",
     r"\midrule",
 ]
 
@@ -391,11 +374,7 @@ for i, cat in enumerate(["environmental", "social", "governance"]):
     for _, row in df[df["category"] == cat].iterrows():
         name = esc(row["name"]).capitalize()
         unit = esc(row["unit"]) if pd.notna(row["unit"]) and str(row["unit"]).strip() else "—"
-        if show_ref:
-            ref = esc(row["reference"])
-            out.append(rf"{ref} & {name} & {unit} \\")
-        else:
-            out.append(rf"{name} & {unit} \\")
+        out.append(rf"{name} & {unit} \\")
 
 out += [
     r"\bottomrule",
@@ -650,7 +629,7 @@ following section describes how to access the data.
 
 The extracted dataset is exposed through a small, versioned REST API at \href{https://api.srnav.com}{\texttt{api.srnav.com}}. Each *release* is an immutable, citeable snapshot of the dataset — once published, its values, version label, and row count never change; superseded releases remain reachable and any subsequent retraction is recorded on the release itself. We recommend pinning research artifacts to an explicit version (e.g. \texttt{`{python} RELEASE_VERSION_MAJOR`.`{python} RELEASE_VERSION_MINOR`}) rather than to \texttt{latest}, so that downstream results remain reproducible when new releases are published. Interactive endpoint documentation, request/response schemas, and a try-it-out console are available at \href{https://api.srnav.com}{\texttt{api.srnav.com}}, which serves a Swagger UI generated from the OpenAPI specification at \href{https://api.srnav.com/openapi.json}{\texttt{/openapi.json}}.
 
-Access is gated by a personal API token, requested at \href{https://srnav.com}{\texttt{srnav.com}} and passed in the standard \texttt{Authorization: Bearer} header. Tokens are scoped to the issuing account and can be rotated or revoked at any time; we ask consumers to keep them out of version control and out of figure source files. The two endpoints needed for most research workflows are:
+Access is gated by a personal API token, requested at \href{https://srnav.com/dashboard/api}{\texttt{srnav.com/dashboard/api}} and passed in the standard \texttt{Authorization: Bearer} header. Tokens are scoped to the issuing account and can be rotated or revoked at any time; we ask consumers to keep them out of version control and out of figure source files. The two endpoints needed for most research workflows are:
 
 \begin{description}
 \setlength{\itemsep}{1pt}
@@ -752,6 +731,7 @@ We encourage users to cite the dataset by its release version (e.g., *Sustainabi
 :::
 
 ```{=latex}
+\end{multicols}
 \clearpage
 \appendix
 \setcounter{section}{1}
@@ -759,25 +739,14 @@ We encourage users to cite the dataset by its release version (e.g., *Sustainabi
 
 # Appendix {.unnumbered}
 
-<!-- TODO: durch echten Anhang-Inhalt ersetzen -->
+## Data Point Definitions {.unnumbered}
 
-## Data Point Package Definition Guide {.unnumbered}
-
-### *Main ESRS KPI* dataset {.unnumbered .unlisted}
+We used the prompts defining the data points below for the extraction
 
 ```{python}
 #| echo: false
 #| output: asis
 
-# Reuses `df` and `category_meta` from the "Data points" chunk above —
-# same Quarto/Jupyter session, no re-fetch. Note: this prints plain
-# Markdown (not raw LaTeX), so no esc() here — pandoc handles the
-# LaTeX-escaping when it compiles this into the PDF.
-
-# Interim store for curated "Variants/Problems" notes -- not yet captured
-# in schema_fields_rows.csv (manual_instructions is empty for all rows).
-# Move these into that column once the schema has a home for them, then
-# drop this dict.
 variants = {
     "employees_total": "Often there are different definitions of the total "
         "number of employees, especially between the financial and the "
@@ -791,19 +760,15 @@ variants = {
         "the example as 250.",
 }
 
-for cat in ["environmental", "governance", "social"]:
+for cat in ["environmental", "social", "governance"]:
     print(f"#### {category_meta[cat]}\n")
     for _, row in df[df["category"] == cat].iterrows():
         unit = (f" *({row['unit']})*"
                 if pd.notna(row["unit"]) and str(row["unit"]).strip()
                 else "")
         print(f"**{row['name'].capitalize()}**{unit}\n")
+        print("\\dpdescstart\n")
         print(f"{row['description']}\n")
+        print("\\dpdescend\n")
         note = variants.get(row["slug"])
-        print(f"*Variants/Problems:* {note or '---'}\n")
-```
-
-
-```{=latex}
-\end{multicols}
 ```

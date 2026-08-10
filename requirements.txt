@@ -1,0 +1,18 @@
+# Python environment for rendering main.qmd.
+#
+# Keep the venv OUTSIDE the repo — an in-tree .venv is ~22k files, which buries
+# the working tree in every editor and search tool.
+#
+#   python3 -m venv ~/.venvs/srn-extraction-whitepaper
+#   ~/.venvs/srn-extraction-whitepaper/bin/python -m pip install -r requirements.txt
+#   QUARTO_PYTHON=~/.venvs/srn-extraction-whitepaper/bin/python quarto render main.qmd
+#
+# Needs Python 3.12. Homebrew's python3 is 3.14 and has no Jupyter, so Quarto
+# picks the wrong interpreter unless QUARTO_PYTHON is set explicitly.
+
+jupyter==1.1.1
+PyYAML==6.0.3
+pandas==3.0.5
+numpy==2.5.2
+matplotlib==3.11.1
+requests==2.34.2

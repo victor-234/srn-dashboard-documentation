@@ -1,4 +1,17 @@
-/.DS_Store
-*.quarto_ipynb_*
+.DS_Store
 .env
+
+# Python
+.venv/
+__pycache__/
+
+# Quarto build artifacts (main.pdf is the tracked deliverable)
+/.quarto/
+/main_files/
+*.quarto_ipynb
+main.tex
+main.log
+
+# Local tooling
+/.claude/settings.local.json
 
