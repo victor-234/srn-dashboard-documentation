@@ -5,12 +5,14 @@
 .venv/
 __pycache__/
 
-# Quarto build artifacts (main.pdf is the tracked deliverable)
+# Quarto build artifacts (srn-benchmarking-documentation.pdf is the tracked deliverable)
 /.quarto/
 /main_files/
 *.quarto_ipynb
 main.tex
 main.log
+srn-benchmarking-documentation.tex
+srn-benchmarking-documentation.log
 
 # Local tooling
 /.claude/settings.local.json

@@ -38,5 +38,5 @@ To reproduce an older build of the paper, pin `RELEASE` in `main.qmd` to an
 explicit version (e.g. `"v2.4"`) instead of `"latest"`. Published releases are
 immutable, so a pinned render is reproducible.
 
-Rendering therefore requires network access. Note that `main.pdf` is committed,
+Rendering therefore requires network access. Note that `srn-benchmarking-documentation.pdf` is committed,
 so a re-render right after a new release will change the numbers in it.

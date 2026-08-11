@@ -86,6 +86,7 @@ format:
         \newcommand{\dpdescstart}{\par\nobreak\begingroup\leftskip=1.5em\relax}
         \newcommand{\dpdescend}{\par\endgroup\addvspace{0.5em}%
           {\color{clrGray200}\rule{\linewidth}{0.4pt}}\par\addvspace{0.7em}}
+    output-file: srn-benchmarking-documentation
     toc: true
     toc-depth: 3
     number-sections: true
