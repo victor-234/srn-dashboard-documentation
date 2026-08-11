@@ -14,6 +14,11 @@ format:
         \renewcommand{\familydefault}{\sfdefault}
         \usepackage{multicol}
         \usepackage{float}
+        % Quarto rewrites raw LaTeX tables and drops any [H]/[h] placement
+        % option, so pin the default placement for table floats instead:
+        % tables stay where they appear in the source, below the text that
+        % introduces them, rather than floating to the top of the page.
+        \floatplacement{table}{H}
         \usepackage{fvextra}
         \fvset{breaklines=true, breakanywhere=true}
         \usepackage{tikz}
@@ -96,11 +101,11 @@ citeproc: true
 link-citations: true
 abstract: |
   This whitepaper documents the automated extraction pipeline of the Sustainability Reporting Navigator (SRN). The SRN
-  extracts two dimensions, a Transparency dimension and an environmental, social and governance (ESG) dimension. The
+  extracts two dimensions, a *Transparency* dimension and an environmental, social and governance (ESG) *Performance* dimension. The
   Transparency dimension captures textual characteristics such as length and readibility as well as
-  environmental and social topic shares. The ESG dimension retrieves and extracts predefined sets of ESG
+  environmental and social topic shares. The performance dimension retrieves values for a predefined sets of ESG
   indicators from firms' annual and sustainability reports using a retrieval-augmented generation (RAG)-based approach. 
-  We describe the design choices, retrieval parameters, and data schema. For technical questions and licensing
+  In this documentation, we describe the design choices, retrieval parameters, and data schema. For technical questions and licensing
   inquiries, please reach out via email at [hello@srnav.com](mailto:hello@srnav.com).
 ---
 
@@ -116,17 +121,16 @@ reporting, built by automatically processing firms' annual and sustainability re
 two complementary questions: how firms report, and what they report. The first is captured by a set of transparency
 dimensions: textual characteristics such as length, readability, and tone, together with the share of disclosure devoted
 to environmental and social topics as defined by the European Sustainability Reporting Standards (ESRS). The second is
-captured by predefined set of data points, retrieved and extracted from the source documents using a artifical
+captured by predefined set of data points based on the ESRS' main quantitative KPIs (see the appendix, `\hyperref[sec-app-definitions]{Data Point Definitions}`{=latex}), retrieved and extracted from the source documents using a artifical
 intelligence pipeline.
 
 This document provides the technical documentation. It is intended for researchers and practitioners who wish to understand how the data was produced, assess its reliability, and use it correctly in downstream analysis.
 
 # Methodology
-This chapter describes the methodology underlying the SRN's extraction pipeline. We first document how the SRN extracts the **Transparency** dimensions from firms' annual and sustainability reports (Section [Transparency]), then describe how the SRN extracts a predefined set of **quantitative ESG indicators** (Section [Extraction Pipeline]).
 
 ## Transparency
 
-The transparency dimensions captured by the SRN dataset describe **how** firms report. To that end, we capture
+The transparency dimensions captured by the SRN dataset describe *how* firms report. To that end, we capture
 textual characteristics (e.g., length and readability) and environmental and social topic shares. The corporate reports are first
 parsed with Docling [@docling2024] and then processed with Python at the sentence level. The language model used to
 classify passages into environmental and social topics was originally developed for @Donau2024-yc. We adopt their label
@@ -136,69 +140,65 @@ In what follows we summarise the two transparency dimensions exposed through the
 
 ### Textual characteristics
 
-For each (firm, year, report) we compute a set of report-level features describing the document's overall structure and writing style. They are stored alongside the extracted ESG indicators and exposed in the API as a single row per report under the `transparency` field. The features fall into three groups:
+For each (firm, year, report) we compute a set of report-level features describing the document's overall structure and writing style. The features fall into two groups:
 
 - **Length and structure.** Total word count (`total_words`), page count (`pages`), and the number of tables (`total_tables`). `image_ratio` is the share of pages that contain at least one image.
 
 - **Readability.** `reading_difficulty` is the mean Gunning Fog index computed at the sentence level and averaged over the document. Higher values indicate more complex prose. `tone` is a sentiment ratio $(w^{+} - w^{-})/(w^{+} + w^{-})$, where $w^{+}$ and $w^{-}$ are the counts of positive and negative words from the @Loughran2011 financial-sentiment dictionary; the ratio is set to zero when both counts are zero. `numbers` is the density of numerical tokens, defined as total numeric tokens divided by total words.
 
+\columnbreak
 
 ### Environmental and social topics
 
 We conduct the topic classification at the sentence level to capture the share of text devoted to different environmental and social topics. 
-We tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model (ESRS-BERT) trained in @Donau2024-yc. Its output is a long table with one row per (document, sentence) carrying the predicted label(s), the model's confidence score, and the original page number.
+We tag each parsed sentence with one or more topic labels covering the environmental and social pillars of the European Sustainability Reporting Standards. The classifier is the supervised model (ESRS-BERT) trained in @Donau2024-yc.
 
 The classifier covers nine topic labels aligned with the topical ESRS standards: five environmental — *E1 Climate Change*, *E2 Pollution*, *E3 Water and Marine Resources*, *E4 Biodiversity and Ecosystems*, and *E5 Resource Use and Circular Economy* — and four social — *S1 Own Workforce*, *S2 Workers in the Value Chain*, *S3 Affected Communities*, and *S4 Consumers and End-Users*. 
 
-For each topic, we report the share of sentences in the sustainability statement assigned to that label, aggregated across all sentences classified as ES-relevant by the model. A sentence is attributed to a topic when the model's confidence score exceeds the decision threshold selected during validation.
+For each topic, we report the share of sentences in the sustainability statement assigned to that label, aggregated across all sentences classified as ES-relevant by the model. A sentence is attributed to a topic when the model's confidence score exceeds the decision threshold of .75.
 
-The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  will be reported in the final published version of @Donau2024-yc. `\hyperref[tab:transparency]{Table~\ref{tab:transparency}}`{=latex} displays all transparency dimensions stored in the `transparency` array.
+The training corpus consists of more than 13,500 manually labelled pages drawn from 200 randomly selected annual and sustainability reports (2023–2024). Page-level labels were refined at the sentence level using GPT-5-nano, and the resulting data were used to fine-tune RoBERTa. Comprehensive classifier statistics, e.g.,  accuracy, precision, recall, and F1-score by topic  is reported in @Donau2024-yc. @tbl-transparency displays all transparency dimensions stored in the `transparency` array.
 
 ```{=latex}
 \end{multicols}
+```
 
-\begin{table}[h]
+```{=latex}
+\begin{table}
 \centering\footnotesize
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.05}
 \caption{Report-level textual features stored in the transparency array.}
-\label{tab:transparency}
+\label{tbl-transparency}
 \begin{tabular}{@{}l l l@{}}
 \toprule
 \textbf{Ref} & \textbf{Description} & \textbf{Unit} \\
 \midrule
 Total words & Total number of words in the report & --- \\
 Pages & Total page count as extracted from the PDF & --- \\
-E1 -- E5 & Share of disclosure covering each environmental ESRS topic & share (0--1) \\
-S1 -- S4 & Share of disclosure covering each social ESRS topic & share (0--1) \\
+Tables & Number of tables detected in the report & --- \\
+Image ratio & Share of pages containing at least one image & share (0--1) \\
 Reading difficulty & Mean Gunning Fog index across pages; higher = more complex & Fog index \\
 Tone & Sentiment ratio $(w^{+}-w^{-})/(w^{+}+w^{-})$ (Loughran and McDonald, 2011) & ratio ($-1$ to $1$) \\
 Numbers & Number of numeric tokens detected in the report & --- \\
-Image ratio & Share of pages containing at least one image & share (0--1) \\
-Tables & Number of tables detected in the report & --- \\
+E1 -- E5 & Share of disclosure covering each environmental ESRS topic & share (0--1) \\
+S1 -- S4 & Share of disclosure covering each social ESRS topic & share (0--1) \\
 \bottomrule
 \end{tabular}
 \end{table}
+```
 
+```{=latex}
+\clearpage
 \begin{multicols}{2}
 ```
 
-## Extraction Pipeline
-This section documents how the SRN extracts the **quantitative** ESG indicators from firms' annual and sustainability reports and how accurately it does so. We first introduce the list of indicators currently in scope (Section [Data Point Packages]) and the rationale for the selection, then walk through the extraction pipeline end-to-end (Section [Pipeline setup]), report its accuracy on a human-reviewed subset of the most recent public release (Section [Pipeline performance]).
+## Performance
 
-### Data Point Packages
-The SRN defines sets of data points that are extracted from firms' annual and sustainability reports. Each datapoint is defined by a name, a unit of measurement, and a precise definition that specifies what to extract and what to ignore. 
+### Data points
 
-All inputs underlying the figures and tables of this document are publicly available. Refer to the Chapter [Working with
-the Data] for details on how to access the data.
+Based on the ESRS, we define a sets of 25 data points that are extracted from firms' annual and sustainability reports. Each datapoint is defined by a name, a unit of measurement, and a precise definition that specifies what to extract and what to ignore. The following table lists the ESG indicators:
 
-\columnbreak
-
-#### Main ESRS KPI dataset
-The *Main ESRS KPI dataset* covers all three ESG dimensions and is rooted in the European Sustainability Reporting
-Standards (ESRS, as prescribed by the Corporate Sustainability Reporting Directive).
-`\hyperref[tab:indicators]{Table~\ref{tab:indicators}}`{=latex} shows the datapoints currently included in the *Main
-ESRS KPI dataset*. The full definitions are provided in the Section [Data Point Package Definition Guide] in the Appendix.
 
 ```{=latex}
 \end{multicols}
@@ -354,12 +354,12 @@ def esc(s):
 ncols = 2
 
 out = [
-    r"\begin{table}[H]",
+    r"\begin{table}",
     r"\centering\footnotesize",
     r"\setlength{\tabcolsep}{6pt}",
     r"\renewcommand{\arraystretch}{1.05}",
     r"\caption{ESG indicators extracted by the pipeline.}",
-    r"\label{tab:indicators}",
+    r"\label{tbl-indicators}",
     r"\begin{tabular}{@{}l l@{}}",
     r"\toprule",
     r"\textbf{Indicator} & \textbf{Unit} \\",
@@ -374,7 +374,8 @@ for i, cat in enumerate(["environmental", "social", "governance"]):
     for _, row in df[df["category"] == cat].iterrows():
         name = esc(row["name"]).capitalize()
         unit = esc(row["unit"]) if pd.notna(row["unit"]) and str(row["unit"]).strip() else "—"
-        out.append(rf"{name} & {unit} \\")
+        # Indent the indicators so the ESG category headings stand out.
+        out.append(rf"\hspace{{1em}}{name} & {unit} \\")
 
 out += [
     r"\bottomrule",
@@ -402,8 +403,7 @@ document, and a per-indicator extraction lane that runs once for each indicator.
 The indexing lane prepares the source documents for retrieval. It first parses the documents with Docling
 [@docling2024] to extract text, tables, and figures, then splits the text into overlapping chunks of roughly
 1,000 characters with a 200-character overlap. Each chunk is embedded into a vector representation using
-Mistral's text embedding model `mistral-embed-2312` [@mistralembed2023] and stored in a `pgvector` cosine-similarity
-index. This index allows for efficient retrieval of relevant chunks during the extraction phase.
+Mistral's text embedding model `mistral-embed-2312` [@mistralembed2023].
 
 The extraction lane extracts the value of each indicator from the indexed chunks. For each indicator, Mistral's
 language model `mistral-large-2513` [@mistrallarge2025] generates a natural-language query based on the indicator's
@@ -414,14 +414,10 @@ vector channel and $0.3$ for the lexical channel. A cosine-similarity floor of $
 relevant chunks. The retrieved chunks, together with a custom prompt and a structured output schema, are passed to
 Mistral's language model `mistral-large-2513` [@mistrallarge2025]. The prompt specifies the indicator definition,
 the expected unit of measurement, and instructions
-for handling absent disclosures. The model returns the extracted value, its source page, a confidence score in
-$[0,1]$, and a short justification. Outputs are validated in-flight against a Zod schema; responses that violate
-the schema are discarded and logged rather than retried, to avoid propagating model errors downstream.
+for handling absent disclosures. The model returns the extracted value, its source page, and a short justification.
 If a response is well-formed but reports that the answer is present in the retrieved sources yet could not be
 extracted as a clean value, the query is reformulated by the model and retrieval is repeated, up to three times in total.
-All indicators per firm-year are extracted in batches of five and results are written to a relational table 
-with one row per indicator–firm–year triplet. Each record retains the source-document identifier and page number, 
-enabling manual verification against the original filing.
+Each record retains the source-document identifier and page number, enabling manual verification against the original filing.
 
 ```{=latex}
 \end{multicols}
@@ -503,22 +499,22 @@ enabling manual verification against the original filing.
 ```
 
 ```{=latex}
+\clearpage
 \begin{multicols}{2}
 ```
 
-# Pipeline Performance
+### Pipeline Performance
 
 The systematic extraction allows for a quantiative assessment of the pipeline's performance. We evaluate every 
 AI-extracted value against a human-verified ground truth.
 
+The evaluation set used for the *Main ESRS KPI* dataset is a constantly updated, human-reviewed subset of public release \texttt{`{python} RELEASE_VERSION_MAJOR`.`{python} RELEASE_VERSION_MINOR`}, covering `{python} PERF_TOTAL_FMT` firm--indicator--year pairs in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI's output, replaced it with the correct number, or marked the indicator as not disclosed. 
 
-## Main ESRS KPI dataset
+Outcomes are partitioned into five mutually exclusive classes: \emph{correct} (the AI value matches the reviewer's value, including agreement on non-disclosure); \emph{wrong} (both the AI and the reviewer extracted a number but the values disagree); \emph{false negative} (the AI returned \texttt{NOT\_FOUND} but the reviewer found a value); \emph{false positive} (the AI returned a value but the reviewer marked the indicator as not disclosed); and \emph{schema error} (the AI's structured output failed Zod validation). @fig-performance reports the per-indicator breakdown of these outcomes, sorted by accuracy.
 
- The evaluation set used for the *Main ESRS KPI* dataset is the human-reviewed subset of public release \texttt{`{python} RELEASE_VERSION_MAJOR`.`{python} RELEASE_VERSION_MINOR`}, covering `{python} PERF_TOTAL_FMT` firm--indicator--year pairs for Euro Stoxx 50 and DAX 40 companies in the reporting years 2024 and 2025. Each pair was independently inspected by a trained reviewer who either accepted the AI's output, replaced it with the correct number, or marked the indicator as not disclosed. Outcomes are partitioned into five mutually exclusive classes: \emph{correct} (the AI value matches the reviewer's value, including agreement on non-disclosure); \emph{wrong} (both the AI and the reviewer extracted a number but the values disagree); \emph{false negative} (the AI returned \texttt{NOT\_FOUND} but the reviewer found a value); \emph{false positive} (the AI returned a value but the reviewer marked the indicator as not disclosed); and \emph{schema error} (the AI's structured output failed Zod validation). @fig-performance reports the per-indicator breakdown of these outcomes, sorted by accuracy.
+Aggregated across all 25 indicators, the pipeline reaches an accuracy of $`{python} PERF_ACCURACY`\%$ on the reviewed subset (`{python} PERF_CORRECT_FMT` of `{python} PERF_TOTAL_FMT` items). Breaking this down by category, governance (one indicator) and social ($`{python} PERF_ACC_SOCIAL_INT`.`{python} PERF_ACC_SOCIAL_DEC`\%$) lie slightly above this mean while environmental indicators ($`{python} PERF_ACC_ENV_INT`.`{python} PERF_ACC_ENV_DEC`\%$) lie slightly below it, driven primarily by Scope 1--3 greenhouse-gas emissions. Across error modes, \emph{wrong} extractions (`{python} PERF_WRONG_FMT` pairs, $`{python} PERF_WRONG_PCT`\%$ of the reviewed set) are the largest single failure class, followed by \emph{false negatives} (`{python} PERF_FN_FMT` pairs, $`{python} PERF_FN_PCT`\%$); \emph{false positives} (`{python} PERF_FP_FMT`, $`{python} PERF_FP_PCT`\%$) and \emph{schema errors} (`{python} PERF_ERROR_FMT`, $`{python} PERF_ERROR_PCT`\%$) are comparatively rare.
 
-Aggregated across all 25 indicators, the pipeline reaches an accuracy of $`{python} PERF_ACCURACY`\%$ on the reviewed subset (`{python} PERF_CORRECT_FMT` of `{python} PERF_TOTAL_FMT` pairs). Breaking this down by category, governance (one indicator) and social ($`{python} PERF_ACC_SOCIAL_INT`.`{python} PERF_ACC_SOCIAL_DEC`\%$) lie slightly above this mean while environmental indicators ($`{python} PERF_ACC_ENV_INT`.`{python} PERF_ACC_ENV_DEC`\%$) lie slightly below it, driven primarily by the harder Scope 1--3 greenhouse-gas emissions. Across error modes, \emph{wrong} extractions (`{python} PERF_WRONG_FMT` pairs, $`{python} PERF_WRONG_PCT`\%$ of the reviewed set) are the largest single failure class, followed by \emph{false negatives} (`{python} PERF_FN_FMT` pairs, $`{python} PERF_FN_PCT`\%$); \emph{false positives} (`{python} PERF_FP_FMT`, $`{python} PERF_FP_PCT`\%$) and \emph{schema errors} (`{python} PERF_ERROR_FMT`, $`{python} PERF_ERROR_PCT`\%$) are comparatively rare.
-
-False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3), where reports frequently use bespoke wording, hide the value in a table footnote, or report partial sub-figures that confuse the retrieval step. The same indicators also produce many \emph{wrong} extractions because firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the LLM occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above $84\%$; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is the lone outlier on the low end ($46\%$): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high \emph{wrong} rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.
+False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 location- and market-based, total emissions, and Scope 3) since sometimes firms report partial sub-figures that confuse the retrieval or report indicators scattered across multiple tables. The same indicators also produce many \emph{wrong} extractions, possibly because sometimes firms disclose multiple consolidations (e.g., group-wide versus segment-level, with or without biogenic emissions) and the LLM occasionally selects a competing nearby figure. Conversely, employee counts, the share of female employees, and total water and land use achieve accuracies above $84\%$; these indicators are typically disclosed as a single, prominently placed number with a stable wording. The annual total remuneration ratio is an outlier on the low end ($46\%$): firms report this metric inconsistently, often as a derived ratio with multiple definitions, which yields a high \emph{wrong} rate that is not retrieval-bound but reflects genuine ambiguity in the underlying disclosure.
 
 
 ```{=latex}
@@ -527,7 +523,7 @@ False negatives concentrate on the greenhouse-gas indicators (Scope 1, Scope 2 l
 
 ```{python}
 #| label: fig-performance
-#| fig-cap: "Per-indicator extraction accuracy on the human-reviewed subset of the public release covering Euro Stoxx 50 and DAX 40 companies in reporting years 2024--2025. Bars are sorted by accuracy. Each stacked bar shows the composition of the reviewed pairs into five outcomes; the rightmost annotation reports the number of reviewed pairs $n$ and the per-indicator accuracy."
+#| fig-cap: "Per-indicator extraction accuracy on the human-reviewed subset of the public release covering reporting years 2024--2025. Bars are sorted by accuracy. Each stacked bar shows the composition of the reviewed pairs into five outcomes; the rightmost annotation reports the number of reviewed pairs $n$ and the per-indicator accuracy."
 #| fig-pos: "H"
 #| fig-width: 6.5
 #| fig-height: 7.8
@@ -719,6 +715,16 @@ message("Pinned to ", latest)
 \begin{multicols}{2}
 ```
 
+Document metadata is served separately from the releases, at
+\href{https://api.srnav.com/documents}{\texttt{GET /documents}}. This endpoint is public and requires no token. It
+returns one record per report in the SRN corpus, carrying the document identifier used in the \texttt{source} document
+reference of every release row, the reporting \texttt{year}, the document \texttt{type} (annual or sustainability
+report), the publication date, the statutory auditor, the link to the original PDF as published by the firm, the page
+range of the sustainability statement within the document (\texttt{pdfpage\_sust\_start} and
+\texttt{pdfpage\_sust\_end}), a CSRD-compliance flag, and the reporting firm with its name, ISIN, LEI, country, sector,
+and industry. Joining a release on the document identifier therefore recovers, for any extracted value, the exact filing
+and page it was taken from.
+
 We encourage users to cite the dataset by its release version (e.g., *Sustainability Reporting Navigator, Main ESRS KPI dataset, release `{python} RELEASE_VERSION_STR`, published `{python} RELEASE_DATE`*) and, where possible, to record the release's \texttt{published\_at} timestamp in supplementary materials so that subsequent retractions or revisions can be detected. Requests, feature suggestions, and bug reports are welcome by email at \href{mailto:hello@srnav.com}{\texttt{hello@srnav.com}}.
 
 ```{=latex}
@@ -739,7 +745,7 @@ We encourage users to cite the dataset by its release version (e.g., *Sustainabi
 
 # Appendix {.unnumbered}
 
-## Data Point Definitions {.unnumbered}
+## Data Point Definitions {.unnumbered #sec-app-definitions}
 
 We used the prompts defining the data points below for the extraction
 
